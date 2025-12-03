@@ -2,129 +2,130 @@
 
 ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-0A0)
 ![Tests](https://img.shields.io/badge/tests-Vitest%20100%25-success)
-![Coverage](https://img.shields.io/badge/couverture-100%25-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 ![Node](https://img.shields.io/badge/node-20.x-43853d)
 ![Status](https://img.shields.io/badge/deployment-Vercel-black)
 
-Plateforme Next.js 16 (App Router) hébergée sur Vercel qui aligne Supabase, Tailwind CSS et un orchestrateur de scrapers pour mettre en avant les meilleures offres tech, produit, marketing et operations. L'expérience est pensée mobile-first, typée de bout en bout et optimisée pour Core Web Vitals.
+Next.js 16 (App Router) platform hosted on Vercel, powered by Supabase, Tailwind CSS and a scraper orchestrator to surface the best engineering, product, marketing and operations jobs. The experience is mobile-first, fully typed and tuned for Core Web Vitals.
 
-## Sommaire
-- [Vue rapide](#vue-rapide)
-- [Architecture en bref](#architecture-en-bref)
-- [Stack & dépendances](#stack--dépendances)
-- [Démarrage rapide](#démarrage-rapide)
-- [Commandes principales](#commandes-principales)
-- [Structure du repo](#structure-du-repo)
-- [Supabase & données](#supabase--données)
-- [Tests & qualité](#tests--qualité)
-- [Documentation détaillée](#documentation-détaillée)
+## Table of contents
+- [Quick tour](#quick-tour)
+- [Architecture at a glance](#architecture-at-a-glance)
+- [Stack & dependencies](#stack--dependencies)
+- [Getting started](#getting-started)
+- [Key commands](#key-commands)
+- [Repository layout](#repository-layout)
+- [Supabase & data](#supabase--data)
+- [Testing & quality](#testing--quality)
+- [Detailed documentation](#detailed-documentation)
+- [How to contribute](#how-to-contribute)
 
-## Vue rapide
-- Authentification complète (inscription, connexion, reset) via Supabase Auth et formulaires réutilisables (`AuthForm`, `useAuthForm`).
-- Parcours SEO-first : pages statiques par catégorie (`/jobs/[category]`), sitemap généré, métadonnées consolidées dans `siteMetadata`.
-- Dashboard multi-rôles protégé par `RoleGuard` avec vues admin, employeur, candidat et modération.
-- Agrégation d'offres via 10+ providers français + Remotive, normalisation et upsert de masse (`jobScraper`, `jobScheduler`).
-- Composants UI < 100 lignes, stylés avec Tailwind et rendus en mode RSC + Suspense pour les sections non critiques.
-- Observabilité par CI GitHub Actions (lint, typecheck, Vitest coverage 100 %) et cron scheduler (`POST /api/jobs/sync`).
+## Quick tour
+- Full authentication journey (sign up, sign in, password reset) via Supabase Auth and reusable form primitives (`AuthForm`, `useAuthForm`).
+- SEO-first flow: static category pages (`/jobs/[category]`), generated sitemap, consolidated metadata (`siteMetadata`).
+- Multi-role dashboard guarded by `RoleGuard` with dedicated admin, employer, job seeker and moderation views.
+- Job aggregation through 10+ French providers plus Remotive, normalized and upserted in batches (`jobScraper`, `jobScheduler`).
+- UI components under 100 lines, styled with Tailwind and rendered through RSC + Suspense for non-critical sections.
+- Observability via GitHub Actions (lint, typecheck, Vitest coverage 100%) and cron scheduler endpoint (`POST /api/jobs/sync`).
 
-## Architecture en bref
-- **App Router** : routes publiques (`src/app`), API Next (auth, jobs, cron) et pages spécialisées (dashboard par rôle).
-- **Features isolées** : `src/features/auth`, `src/features/jobs`, `src/features/dashboard` regroupent composants, hooks et services dédiés pour limiter les couplages.
-- **Libs partagées** : `src/lib/env.*` impose des variables typées, `supabase/browser|server` encapsulent les clients.
-- **Ingestion d'offres** : `providers` définit chaque source, `jobScraper` normalise puis `jobScheduler` pilote l'exécution et loggue les runs dans Supabase.
-- **API internes** : `/api/jobs` expose la recherche, `/api/jobs/bootstrap` déclenche Remotive (public), `/api/jobs/sync` est protégé par `JOB_CRON_SECRET`.
+## Architecture at a glance
+- **App Router**: public routes (`src/app`), Next API routes (auth, jobs, cron) and role-specific dashboard pages.
+- **Isolated features**: `src/features/auth`, `src/features/jobs`, `src/features/dashboard` bundle logic, hooks and UI per domain to reduce coupling.
+- **Shared libs**: `src/lib/env.*` enforce typed environment variables, `supabase/browser|server` wrap the clients.
+- **Job ingestion**: `providers` define each source, `jobScraper` normalizes payloads, `jobScheduler` drives execution and logs runs in Supabase.
+- **Internal APIs**: `/api/jobs` exposes search, `/api/jobs/bootstrap` triggers Remotive (public), `/api/jobs/sync` is protected through `JOB_CRON_SECRET`.
 
-## Stack & dépendances
-- Next.js 16 + React 19 (Server Components, Suspense, dynamic imports ciblés).
-- Tailwind CSS 3.4 avec design tokens utilitaires (voir `src/app/globals.css`).
-- Supabase (Postgres + Auth) géré via Supabase CLI et migrations versionnées dans `supabase/migrations`.
-- Vitest + Testing Library + MSW pour la simulation côté réseau.
-- ESLint 9 + TypeScript 5.6 (mode strict) + configuration App Router.
-- Dockerfile multi-étapes et `docker-compose.yml` pour un environnement de dev hermétique.
+## Stack & dependencies
+- Next.js 16 + React 19 (Server Components, Suspense, targeted dynamic imports).
+- Tailwind CSS 3.4 with utility design tokens (`src/app/globals.css`).
+- Supabase (Postgres + Auth) managed through Supabase CLI and SQL migrations stored in `supabase/migrations`.
+- Vitest + Testing Library + MSW for unit and integration coverage.
+- ESLint 9 + TypeScript 5.6 (strict mode) + App Router configuration.
+- Multi-stage Dockerfile and `docker-compose.yml` for reproducible dev environments.
 
-## Démarrage rapide
-1. **Pré-requis** : Node 20, npm 10, Supabase CLI (`brew install supabase/tap/supabase`), Docker (optionnel).
-2. **Config**  
+## Getting started
+1. **Prerequisites**: Node 20, npm 10, Supabase CLI (`brew install supabase/tap/supabase`), Docker (optional).
+2. **Config**
    ```bash
    cp .env.example .env
-   # Renseignez les clés Supabase + endpoints providers requis
+   # Fill in your Supabase keys plus the provider endpoints/tokens you plan to use
    ```
-3. **Installer & lancer**  
+3. **Install & run**
    ```bash
    npm install
    npm run dev
    ```
-4. **Base locale (optionnel mais conseillé)**  
+4. **Local database (recommended)**
    ```bash
-   supabase db start            # démarre Postgres local
-   supabase db reset            # applique toutes les migrations SQL
+   supabase db start            # spins up local Postgres
+   supabase db reset            # applies all SQL migrations
    ```
-5. **Injecter des offres démo** : exécutez `POST http://localhost:3000/api/jobs/bootstrap` pour importer Remotive.
+5. **Seed data**: call `POST http://localhost:3000/api/jobs/bootstrap` to import Remotive sample jobs.
 
-### Avec Docker
+### With Docker
 ```bash
-make docker-up        # build + run dev (hot reload 0.0.0.0:3000)
-make docker-logs      # suivre les logs
-make docker-down      # arrêter et nettoyer
+make docker-up        # build + run dev (hot reload on 0.0.0.0:3000)
+make docker-logs      # tail logs
+make docker-down      # stop and clean
 ```
 
-## Commandes principales
-- `npm run dev` : Next.js + HMR.
-- `npm run build` : build production (analyzers + code splitting optimisé).
-- `npm run start` : lance le build localement (simulateur Vercel).
-- `npm run lint` : ESLint (config Next Core Web Vitals).
-- `npm run typecheck` : `tsc --noEmit`.
-- `npm run test` / `npm run test:watch` : Vitest + couverture V8 100 %.
+## Key commands
+- `npm run dev`: Next.js + HMR.
+- `npm run build`: production build (analyzers + optimized code splitting).
+- `npm run start`: serve the production build locally.
+- `npm run lint`: ESLint (Next Core Web Vitals ruleset).
+- `npm run typecheck`: `tsc --noEmit`.
+- `npm run test` / `npm run test:watch`: Vitest + V8 coverage (100% enforced).
 
-## Structure du repo
+## Repository layout
 ```
 src/
-  app/                  # Routes Next.js (auth, jobs, dashboard, API)
-  components/           # Layout + sections UI partagées
-  config/               # Métadonnées site, catégories, routes par rôle
-  features/             # Domaines auth / jobs / dashboard
+  app/                  # Next.js routes (auth, jobs, dashboard, API)
+  components/           # Shared layout + sections
+  config/               # Site metadata, categories, role routes
+  features/             # Auth / jobs / dashboard domains
     jobs/
-      providers/        # Connecteurs + configuration dynamique
-      scheduler/        # Orchestrateur + règles d'éligibilité
-      scraper/          # Normalisation + upsert Supabase
-  hooks/                # Hooks personnalisés (auth, recherche)
-  lib/                  # Clients Supabase + env typés (client/server)
-  services/             # Accès Supabase côté serveur/client
-  types/ & utils/       # Typages partagés + helpers format
-supabase/migrations/    # Schéma Postgres versionné (jobs, runs, config)
+      providers/        # Connectors + dynamic settings
+      scheduler/        # Scheduler + eligibility rules
+      scraper/          # Normalization + Supabase upsert
+  hooks/                # Custom hooks (auth, job search)
+  lib/                  # Supabase clients + typed env helpers
+  services/             # Server/client Supabase accessors
+  types/ & utils/       # Shared types + helpers
+supabase/migrations/    # Versioned SQL schema (jobs, runs, config)
 ```
 
-## Supabase & données
-1. **Migrations** : exécutez `supabase db push` pour créer `jobs`, `job_provider_runs`, `job_provider_config` ainsi que les index et triggers `updated_at`.
-2. **Sécurité** : RLS activée (policy `jobs public read`). Les écritures passent exclusivement par les API Next côté serveur ou par le scheduler.
-3. **Providers** : chaque source peut être pilotée par env (`FRANCE_TRAVAIL_API_URL`, …) ou via la table `job_provider_config`. Voir `providerConfigStore` pour l'ordre de priorité.
-4. **Cron** : appelez `/api/jobs/sync` avec l'en-tête `x-cron-secret: $JOB_CRON_SECRET` (configurable dans `.env`). En production, brancher un cron Vercel ou GitHub Actions schedule.
-5. **Bootstrap** : l'endpoint `/api/jobs/bootstrap` importe Remotive sans secret pour disposer de données dès l'onboarding produit.
+## Supabase & data
+1. **Migrations**: run `supabase db push` to create `jobs`, `job_provider_runs`, `job_provider_config` plus indexes and `updated_at` triggers.
+2. **Security**: RLS enabled (policy `jobs public read`). Writes only go through Next server APIs or the scheduler.
+3. **Providers**: configuration can come from env vars (`FRANCE_TRAVAIL_API_URL`, …) or from the `job_provider_config` table. `providerConfigStore` documents priority rules.
+4. **Cron**: call `/api/jobs/sync` with header `x-cron-secret: $JOB_CRON_SECRET` (defined in `.env`). In production, hook it to Vercel Cron or GitHub Actions schedule.
+5. **Bootstrap**: `/api/jobs/bootstrap` imports Remotive with no secret so product teams get instant data.
 
-## Tests & qualité
-- Couverture 100 % exigée (`vitest run --coverage`) : tests unitaires (`src/__tests__`) couvrent services, hooks, config et composants critiques.
-- ESLint + TypeScript strict bloquent les PR via la CI GitHub Actions (`.github/workflows/ci.yml`).
-- Les migrations sont rejouées dans la CI via `supabase db push` contre un Postgres éphémère.
-- Les PR doivent vérifier accessibilité (Tailwind + ARIA), LCP < 2,5 s (Lazy load sections non critiques), budget bundle < 160 kB grâce au code splitting.
+## Testing & quality
+- 100% coverage enforced (`vitest run --coverage`), covering services, hooks, config and critical components in `src/__tests__`.
+- ESLint + strict TypeScript block PRs through the GitHub Actions workflow (`.github/workflows/ci.yml`).
+- CI replays migrations through `supabase db push` against an ephemeral Postgres instance.
+- PRs must validate accessibility (Tailwind + ARIA), LCP < 2.5s (lazy loading), bundle budget < 160 kB thanks to code splitting.
 
-## Documentation détaillée
-- `docs/README.md` : table des matières & conventions.
-- `docs/architecture.md` : schéma complet (flux front, ingestion, SEO).
-- `docs/development.md` : setup local, outils, debug et données seed.
-- `docs/operations.md` : déploiement Vercel, secrets, scheduler & monitoring.
-- `docs/quality.md` : stratégie de tests, obligations perf/accessibilité, checklist PR.
-- `docs/contributing.md` : guide contribution (workflow git, normes, checklist PR).
+## Detailed documentation
+- `docs/README.md`: table of contents & conventions.
+- `docs/architecture.md`: full system view (front flows, ingestion, SEO).
+- `docs/development.md`: local setup, tooling, debugging tips and sample data.
+- `docs/operations.md`: Vercel deployment, secrets, CI/CD, scheduler & monitoring.
+- `docs/quality.md`: testing strategy, performance/accessibility budgets, PR checklist.
+- `docs/contributing.md`: contribution guide (git workflow, coding standards, PR expectations).
 
-## Comment contribuer
-1. Créez une branche descriptive (`feature/job-card-skeleton`).
-2. Implémentez la fonctionnalité en respectant les conventions (exports nommés, composants < 100 lignes, interfaces TS).
-3. Ajoutez/actualisez les tests pertinents (`npm run test`) et exécutez `npm run lint && npm run typecheck`.
-4. Mettez à jour la documentation si le comportement évolue (`docs/` ou ce README).
-5. Ouvrez une Pull Request détaillant :
-   - le besoin business
-   - les impacts techniques (routes, migrations, env vars)
-   - la validation (captures, tests, métriques perf).
+## How to contribute
+1. Create a descriptive branch (`feature/job-card-skeleton`).
+2. Implement the feature following project conventions (named exports, <100-line components, TypeScript interfaces).
+3. Update or add relevant tests (`npm run test`) and run `npm run lint && npm run typecheck`.
+4. Update documentation when behavior changes (`docs/` or this README).
+5. Open a Pull Request covering:
+   - the business need
+   - technical impact (routes, migrations, env vars)
+   - validation evidence (screenshots, tests, performance notes).
 
-Voir `docs/contributing.md` pour les exemples de messages de commit, la stratégie de branchement et la checklist complète PR.
+See `docs/contributing.md` for commit examples, branching strategy and the full PR checklist.
 
-> Besoin d'un panorama plus approfondi ? Consultez le dossier `docs/` pour les guides détaillés, schémas d'architecture et checklists opérationnelles.
+> Need a deeper dive? Explore the `docs/` folder for detailed guides, architecture diagrams and operational checklists.

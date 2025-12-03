@@ -1,29 +1,29 @@
-# Documentation Taletaff
+# Taletaff Documentation
 
-Ce dossier rassemble les guides opérationnels et techniques nécessaires pour maintenir, faire évoluer et opérer Taletaff sans connaissance préalable du contexte. Chaque document va droit au but et référence les fichiers sources pertinents afin de réduire le temps de ramp-up.
+This folder hosts all technical and operational guides required to maintain, evolve and operate Taletaff without prior context. Each document is concise and references the relevant source files to reduce ramp-up time.
 
-## Objectifs
-- Donner une vision partagée de l'architecture et des choix techniques majeurs.
-- Décrire un workflow de développement reproductible (env, migrations, données seed).
-- Documenter les attentes d'exploitation (déploiements, cron scrapers, observabilité).
-- Capturer l'exigence qualité (tests, performance, accessibilité, checklist PR).
+## Goals
+- Share a common understanding of the architecture and major technical choices.
+- Describe a reproducible development workflow (environment, migrations, seed data).
+- Document operational expectations (deployments, scraper cron jobs, observability).
+- Capture the quality bar (tests, performance, accessibility, PR checklist).
 
-## Table des matières
-- [Architecture](./architecture.md) · Modules front, pipeline d'ingestion, SEO, points d'extension.
-- [Développement](./development.md) · Setup local, variables d'environnement, données de tests, tips de debug.
-- [Opérations](./operations.md) · Déploiement Vercel, secrets, CI/CD, scheduler et surveillance.
-- [Qualité](./quality.md) · Stratégie de tests, normes de code, budgets de performances et checklist de revue.
-- [Contribution](./contributing.md) · Workflow git, conventions de code, checklist avant PR et attentes de revue.
+## Table of contents
+- [Architecture](./architecture.md) · Front modules, ingestion pipeline, SEO, extension points.
+- [Development](./development.md) · Local setup, environment variables, test data, debugging tips.
+- [Operations](./operations.md) · Vercel deployment, secrets, CI/CD, scheduler & monitoring.
+- [Quality](./quality.md) · Testing strategy, coding standards, performance budgets and review checklist.
+- [Contribution](./contributing.md) · Git workflow, coding conventions, pre-PR checklist and review expectations.
 
-## Conventions de lecture
-- Les chemins sont relatifs à la racine du repo (ex : `src/features/jobs/scheduler/jobScheduler.ts`).
-- Les commandes shell sont destinées à macOS/Linux (remplacez `npm` par `pnpm` si besoin).
-- Les variables d'environnement sont notées `SCREAMING_SNAKE_CASE` et proviennent de `.env` ou Supabase.
-- Tout code cité est en TypeScript/TSX. Aucun composant n'utilise d'export par défaut, conformément aux conventions du projet.
+## Reading conventions
+- Paths are relative to the repo root (e.g. `src/features/jobs/scheduler/jobScheduler.ts`).
+- Shell commands target macOS/Linux (replace `npm` with `pnpm` if needed).
+- Environment variables are written in `SCREAMING_SNAKE_CASE` and come from `.env` or Supabase.
+- All code snippets use TypeScript/TSX. Components never use default exports per project conventions.
 
-## Glossaire rapide
-- **Provider** : connecteur REST définissant comment récupérer et normaliser les offres d'une source externe (`features/jobs/providers`).
-- **Scheduler** : orchestrateur qui détermine les providers à exécuter et journalise chaque run (`jobScheduler`).
-- **Run** : exécution d'un provider, historisée dans `job_provider_runs` avec statut et message d'erreur.
-- **RLS** : Row Level Security côté Supabase, activée pour fournir un accès lecture public tout en protégeant les écritures.
-- **RSC** : React Server Components, utilisés pour les pages du dossier `src/app` afin de limiter le JavaScript envoyé au client.
+## Glossary
+- **Provider**: REST connector that explains how to fetch and normalize external job offers (`features/jobs/providers`).
+- **Scheduler**: orchestrator deciding which providers to run and logging each execution (`jobScheduler`).
+- **Run**: execution of a provider, persisted in `job_provider_runs` with status and optional error.
+- **RLS**: Row Level Security in Supabase, enabled to allow public read access while protecting writes.
+- **RSC**: React Server Components used in `src/app` to minimize the JavaScript shipped to the client.

@@ -1,44 +1,44 @@
-# Qualité & exigences
+# Quality & Standards
 
-## Piliers
-- **Fiabilité** : chaque module clé est couvert par des tests unitaires et intégration (Vitest + Testing Library).
-- **Performance** : objectifs Core Web Vitals (LCP < 2,5 s, CLS < 0,1, FID/INP < 100 ms) grâce au rendu RSC, au lazy loading des sections non critiques et à la réduction des bundles.
-- **Accessibilité** : composants Tailwind vérifient contraste, focus visible et rôle ARIA explicite (`Button`, `InputField`, `Tag`).
-- **Maintenabilité** : code TypeScript strict, exports nommés uniquement, composants < 100 lignes et organisés par domaine.
+## Pillars
+- **Reliability**: every critical module is covered by unit and integration tests (Vitest + Testing Library).
+- **Performance**: Core Web Vitals targets (LCP < 2.5 s, CLS < 0.1, INP < 100 ms) achieved via RSC rendering, lazy loading and lean bundles.
+- **Accessibility**: Tailwind components respect contrast, focus rings and ARIA roles (`Button`, `InputField`, `Tag`).
+- **Maintainability**: strict TypeScript, named exports only, components under 100 lines and grouped by domain.
 
 ## Tests
-| Type | Cible | Fichiers/Commandes |
+| Type | Scope | Files/Commands |
 | --- | --- | --- |
-| Unitaires | Services Supabase (`authService`, `jobService`), helpers (`format`), config (`siteMetadata`). | `npm run test src/__tests__/authService.test.ts` |
-| Intégration légère | Composants RSC (`Hero`, `JobSearchSection`) via Testing Library + MSW. | `npm run test src/__tests__/jobSection.test.tsx` |
-| Scheduler & providers | Tests dédiés (`jobScheduler.test.ts`, `jobScraper.test.ts`) simulant Supabase in-memory. | `npm run test src/__tests__/jobScheduler.test.ts` |
+| Unit | Supabase services (`authService`, `jobService`), helpers (`format`), config (`siteMetadata`). | `npm run test src/__tests__/authService.test.ts` |
+| Light integration | RSC components (`Hero`, `JobSearchSection`) via Testing Library + MSW. | `npm run test src/__tests__/jobSection.test.tsx` |
+| Scheduler & providers | Dedicated specs (`jobScheduler.test.ts`, `jobScraper.test.ts`) mocking Supabase. | `npm run test src/__tests__/jobScheduler.test.ts` |
 | Hooks | `useAuthForm`, `useJobSearch`, `useCurrentUser`. | `npm run test src/__tests__/useJobSearch.test.tsx` |
 
-> Tous les tests doivent garder une couverture 100 % (branches, fonctions, lignes). Le seuil est enforce par Vitest (`coverage.v8`).
+> Coverage must stay at 100% (branches, functions, lines). Vitest enforces the threshold through V8 coverage.
 
-## Lint & typage
-- `npm run lint` utilise ESLint 9 avec la config Next Core Web Vitals. Les erreurs bloquent la CI.
-- `npm run typecheck` exécute `tsc --noEmit` avec `strict: true`, `noUncheckedIndexedAccess`, `moduleResolution: bundler`.
-- Aucun `any` implicite ni `// @ts-ignore` n'est toléré sans justification documentée.
-- Préférez les **interfaces** aux types alias pour permettre l'extension par augmentation déclarative.
+## Linting & typing
+- `npm run lint` uses ESLint 9 with Next Core Web Vitals config; errors block CI.
+- `npm run typecheck` executes `tsc --noEmit` with `strict: true`, `noUncheckedIndexedAccess`, `moduleResolution: bundler`.
+- No implicit `any` or `// @ts-ignore` without documented justification.
+- Prefer **interfaces** over type aliases for public structures.
 
-## Performance & accessibilité
-- **Lazy loading** : import dynamique des composants lourds (`SuccessStoriesLoader`, dashboard panels non critiques).
-- **Suspense** : toutes les sections asynchrones sont emballées dans `Suspense` avec un fallback léger afin d'éviter les flashes de contenu.
-- **Tailwind** : respect de la grille responsive mobile-first (`max-w`, `flex-col` par défaut) et tokens couleur compatibles dark mode si besoin.
-- **Images** : privilégiez `<Image />` (Next) et les SVG inline du dossier `public/`.
-- **Audit** : lancez Lighthouse en mode mobile avant chaque release majeure. Documentez les régressions dans la PR.
+## Performance & accessibility
+- **Lazy loading**: dynamical imports for heavy components (`SuccessStoriesLoader`, non-critical dashboard panels).
+- **Suspense**: wrap every async section with `Suspense` + lightweight fallback to avoid layout shifts.
+- **Tailwind**: mobile-first classes (`flex-col` baseline) and ordered utility groups (layout → spacing → typography → color → state).
+- **Images**: use Next `<Image />` when possible; keep SVG assets in `public/`.
+- **Audits**: run Lighthouse mobile before each major release and document regressions in the PR.
 
-## Checklist Pull Request
-1. [ ] Les captures d'écran ou GIF sont fournis pour les changements UI.
-2. [ ] `npm run lint`, `npm run typecheck`, `npm run test` passent localement.
-3. [ ] Les migrations Supabase sont incluses et documentées (si pertinentes).
-4. [ ] Les nouvelles variables d'environnement sont ajoutées à `.env.example` + `docs/development.md`.
-5. [ ] Les endpoints impactés sont décrits (docs/operations.md si nécessaire).
-6. [ ] Les charges perf/SEO sont vérifiées (bundle, LCP) et mentionnées si elles bougent.
-7. [ ] Les strings user-facing sont en français et accessibles (ARIA, focus visible).
+## Pull Request checklist
+1. [ ] Screenshots or GIFs provided for UI changes.
+2. [ ] `npm run lint`, `npm run typecheck`, `npm run test` pass locally.
+3. [ ] Supabase migrations added and documented if applicable.
+4. [ ] New environment variables added to `.env.example` + `docs/development.md`.
+5. [ ] Impacted endpoints described (update `docs/operations.md` if needed).
+6. [ ] Performance/SEO implications mentioned (bundle size, LCP, etc.).
+7. [ ] User-facing strings translated to French and accessible (ARIA, focus states).
 
-## Améliorations possibles
-- Ajouter des tests E2E Playwright sur les parcours auth/job search.
-- Intégrer un bundle analyzer Vercel + Lighthouse CI dans Github Actions.
-- Brancher des alertes automatiques sur `job_provider_runs.status = 'failed'` (Supabase Edge Functions ou Zapier).
+## Future improvements
+- Add Playwright E2E tests for auth and job search journeys.
+- Integrate Vercel bundle analyzer + Lighthouse CI into GitHub Actions.
+- Plug automated alerts on `job_provider_runs.status = 'failed'` (Supabase Edge Functions, Zapier, etc.).

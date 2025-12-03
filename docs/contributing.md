@@ -1,61 +1,61 @@
-# Guide de contribution
+# Contribution Guide
 
-## Philosophie
-Nous privilégions des changements petits, typés et documentés. Chaque PR doit pouvoir être relue en moins de 10 minutes et inclure tests + captures si UI. Les contributions externes suivent la même exigence que l'équipe cœur : zéro avertissement ESLint, 100 % de couverture et docs alignées.
+## Philosophy
+We value small, typed and well-documented changes. Every PR should be reviewable in under 10 minutes and include tests plus screenshots/GIFs for UI work. External contributors follow the same bar as the core team: zero ESLint warnings, 100% coverage, documentation aligned.
 
-## Workflow Git
-1. **Synchronisez `main`**
+## Git workflow
+1. **Sync `main`**
    ```bash
    git checkout main
    git pull origin main
    ```
-2. **Créez une branche descriptive**
+2. **Create a descriptive branch**
    ```bash
    git checkout -b feature/job-card-skeleton
    ```
-3. **Commits atomiques**
-   - Préfixe suggéré : `feat:`, `fix:`, `docs:`, `chore:`, `test:`.
-   - Message au présent, centré sur le "pourquoi" plutôt que le comment.
-   - Exemple :
+3. **Atomic commits**
+   - Suggested prefixes: `feat:`, `fix:`, `docs:`, `chore:`, `test:`.
+   - Present tense, focused on the *why* rather than the *how*.
+   - Example:
      ```
-     feat: expose bootstrap endpoint dans le dashboard admin
+     feat: expose bootstrap endpoint inside admin dashboard
      ```
-4. **Rebase** régulièrement (`git pull --rebase origin main`) pour éviter les merge commits.
+4. **Rebase often** (`git pull --rebase origin main`) to avoid merge commits.
 
-## Checklist locale
+## Local checklist
 - [ ] `npm run lint`
 - [ ] `npm run typecheck`
 - [ ] `npm run test`
-- [ ] Ajout/ajustement des tests unitaires ou d'intégration impactés.
-- [ ] Documentation mise à jour (`README`, `docs/*`, commentaires significatifs si besoin).
-- [ ] Nouveaux env vars documentés dans `.env.example` + `docs/development.md`.
-- [ ] Capture ou GIF si la vue utilisateur change.
+- [ ] Add/update affected unit or integration tests.
+- [ ] Update documentation (`README`, `docs/*`, meaningful code comments if needed`).
+- [ ] Document new env vars in `.env.example` + `docs/development.md`.
+- [ ] Provide a screenshot/GIF if the UI changes.
 
-## Style de code
-- TypeScript strict, aucune utilisation de `any` implicite.
-- Exports **nommés uniquement** (pas de `export default`).
-- Préférez les **interfaces** pour les structures publiques.
-- Pas de classes React : uniquement des composants fonctionnels (`const Component = () => { ... }`).
-- Tailwind : mobile-first (`flex-col`/`gap` par défaut) et classes utilitaires ordonnées (layout → spacing → typo → couleur → état).
-- Components < 100 lignes ; factorisez les sous-parties dans des helpers/hook si nécessaire.
+## Code style
+- Strict TypeScript, no implicit `any`.
+- **Named exports only** (no `export default`).
+- Prefer **interfaces** for public structures.
+- React components must be functional (`const Component = () => { ... }`).
+- Tailwind: mobile-first (`flex-col`/`gap` baseline) and ordered utilities (layout → spacing → typography → color → state).
+- Components stay under 100 lines; extract helpers/hooks when needed.
 
 ## Tests
-- Utilisez Vitest + Testing Library.
-- Ciblez les scénarios critiques : succès, erreurs, edge cases (ex : provider non configuré).
-- Pour les hooks asynchrones, utilisez `await waitFor(...)` et MSW pour stubber les requêtes.
-- Ajoutez des snapshots uniquement si la sortie est stable et difficile à tester autrement.
+- Use Vitest + Testing Library.
+- Cover success, failure and edge cases (e.g. provider not configured).
+- For async hooks, rely on `await waitFor(...)` and MSW to stub network calls.
+- Snapshots only when the output is stable and hard to assert otherwise.
 
-## Ouverture de Pull Request
-Incluez :
-- Résumé métier (ex : « permettre aux admins de relancer un provider »).
-- Détails techniques (fichiers clés, migrations, nouvelles routes).
-- Résultats des commandes (`lint`, `typecheck`, `test`).
-- Impacts SEO/Perf/Accessibilité si concernés (ex : nouvel import dynamique, changement de structure HTML).
-- Checklist PR (copiable depuis `docs/quality.md`).
+## Pull Request expectations
+Include:
+- Business summary (e.g. "allow admins to rerun a provider").
+- Technical details (key files, migrations, new routes).
+- Command results (`lint`, `typecheck`, `test`).
+- SEO/Performance/Accessibility impacts (dynamic imports, DOM structure, etc.).
+- PR checklist (copy from `docs/quality.md`).
 
-## Revue
-- L'équipe core répond sous 2 jours ouvrés.
-- Les feedbacks doivent être considérés dans la branche initiale (pas besoin d'ouverture d'une nouvelle PR sauf cas majeur).
-- Les conversations résolues nécessitent un commentaire confirmant la mise en place de la recommandation.
+## Review process
+- Core team replies within two business days.
+- Address feedback on the same branch (no need for a follow-up PR unless the scope changes drastically).
+- Resolve conversations with a note confirming the applied change.
 
-Merci de contribuer à faire de Taletaff une plateforme rapide, fiable et documentée ! 🙌
+Thanks for helping keep Taletaff fast, reliable and well-documented! 🙌
