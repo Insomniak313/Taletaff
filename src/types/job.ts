@@ -22,6 +22,9 @@ export interface JobRecord {
   salaryMax: number;
   tags: string[];
   createdAt: string;
+  source?: string;
+  externalId?: string | null;
+  fetchedAt?: string | null;
 }
 
 export interface JobFilters {
