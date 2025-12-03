@@ -15,6 +15,9 @@ const mapRecord = (record: Record<string, unknown>): JobRecord => ({
   salaryMax: Number(record.salary_max ?? record.salaryMax ?? 0),
   tags: (record.tags as string[]) ?? [],
   createdAt: String(record.created_at ?? record.createdAt ?? new Date().toISOString()),
+  source: record.source ? String(record.source) : undefined,
+  externalId: record.external_id ? String(record.external_id) : undefined,
+  fetchedAt: record.fetched_at ? String(record.fetched_at) : undefined,
 });
 
 export const jobService = {
