@@ -8,7 +8,8 @@ export type JobProviderId =
   | "chooseyourboss"
   | "monster-fr"
   | "indeed-fr"
-  | "talent-io";
+  | "talent-io"
+  | "remotive";
 
 export interface ProviderJob {
   externalId: string;

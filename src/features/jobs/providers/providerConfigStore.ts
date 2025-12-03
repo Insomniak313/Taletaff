@@ -29,6 +29,7 @@ const PROVIDER_ENV_KEYS: Record<JobProviderId, ProviderEnvKeys> = {
   "monster-fr": { endpoint: "MONSTER_FR_API_URL", token: "MONSTER_FR_API_KEY" },
   "indeed-fr": { endpoint: "INDEED_FR_API_URL", token: "INDEED_FR_API_TOKEN" },
   "talent-io": { endpoint: "TALENT_IO_API_URL", token: "TALENT_IO_API_TOKEN" },
+  remotive: { endpoint: "REMOTIVE_API_URL" },
 };
 
 const readEnvDefaults = (provider: JobProviderId): JobProviderSettings => {
