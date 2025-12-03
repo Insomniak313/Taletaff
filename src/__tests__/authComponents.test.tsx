@@ -65,6 +65,14 @@ describe("Composants auth", () => {
     expect(submit).toHaveBeenCalled();
   });
 
+  it("permet de sélectionner un rôle avant inscription", () => {
+    render(<AuthForm mode="signup" />);
+    const employerRadio = screen.getByLabelText(/Employeur/i) as HTMLInputElement;
+    expect(employerRadio.checked).toBe(false);
+    fireEvent.click(employerRadio);
+    expect(employerRadio.checked).toBe(true);
+  });
+
   it("soumet la demande de reset", () => {
     render(<ForgotPasswordForm />);
     fireEvent.change(screen.getByLabelText(/Email associé/i), {

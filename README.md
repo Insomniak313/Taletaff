@@ -59,6 +59,7 @@ src/
 - Couverture minimale forcée (100 % lignes/fonctions/branches) via Vitest.
 - Tests unitaires : services, hooks, formatters, configuration.
 - Tests d'intégration : composants React clés et flux des hooks.
+- Surveillance CI : un cron nightly relance lint, typecheck et tests pour détecter les régressions silencieuses.
 - CI (/.github/workflows/ci.yml) : lint + typecheck + tests sur Node 20.
 
 ## Déploiement Vercel

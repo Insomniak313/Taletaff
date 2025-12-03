@@ -17,4 +17,14 @@ describe("siteMetadata", () => {
     expect(jobsUrl).toContain(siteMetadata.siteUrl);
     expect(jobsUrl.endsWith("/jobs")).toBe(true);
   });
+
+  it("préserve le slash final pour la page d'accueil", () => {
+    const homeUrl = absoluteUrl("/");
+    expect(homeUrl).toBe(`${siteMetadata.siteUrl}/`);
+  });
+
+  it("ajoute un slash initial si le chemin ne commence pas par /", () => {
+    const nestedUrl = absoluteUrl("jobs/product");
+    expect(nestedUrl).toContain("/jobs/product");
+  });
 });

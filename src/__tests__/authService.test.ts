@@ -43,6 +43,7 @@ describe("authService", () => {
         password: "secret",
         fullName: "Test User",
         categoryPreferences: ["product"],
+        role: "jobseeker",
       })
     ).resolves.toBeUndefined();
   });
@@ -64,6 +65,7 @@ describe("authService", () => {
         password: "secret",
         fullName: "Test User",
         categoryPreferences: [],
+        role: "jobseeker",
       })
     ).rejects.toThrow("signup");
   });

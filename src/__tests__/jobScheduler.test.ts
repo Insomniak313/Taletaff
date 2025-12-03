@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { determineDueProviders, JOB_REFRESH_INTERVAL_MS } from "@/features/jobs/scheduler/jobScheduler";
+import {
+  determineDueProviders,
+  JOB_REFRESH_INTERVAL_MS,
+} from "@/features/jobs/scheduler/jobScheduler";
 import type { JobProvider, JobProviderId } from "@/features/jobs/providers";
+import type { ProviderRunRow } from "@/features/jobs/scheduler/jobScheduler";
 import type { JobProviderSettings } from "@/features/jobs/providers/types";
 
 const buildProvider = (id: JobProviderId, enabled = true): JobProvider => ({
@@ -10,6 +14,40 @@ const buildProvider = (id: JobProviderId, enabled = true): JobProvider => ({
   maxBatchSize: 50,
   isConfigured: () => enabled,
   fetchJobs: async () => [],
+});
+
+const PROVIDER_IDS: JobProviderId[] = [
+  "france-travail",
+  "apec",
+  "meteojob",
+  "hellowork",
+  "welcometothejungle",
+  "jobteaser",
+  "chooseyourboss",
+  "monster-fr",
+  "indeed-fr",
+  "talent-io",
+  "remotive",
+] as const;
+
+const createJobCounts = (
+  overrides: Partial<Record<JobProviderId, number>> = {}
+): Record<JobProviderId, number | undefined> =>
+  PROVIDER_IDS.reduce<Record<JobProviderId, number | undefined>>((acc, providerId) => {
+    acc[providerId] = overrides[providerId];
+    return acc;
+  }, {} as Record<JobProviderId, number | undefined>);
+
+const buildRun = (
+  providerId: JobProviderId,
+  overrides: Partial<ProviderRunRow> = {}
+): ProviderRunRow => ({
+  provider: providerId,
+  last_run_at: null,
+  last_success_at: null,
+  status: "success",
+  error: null,
+  ...overrides,
 });
 
 const withSettings = (providerId: JobProviderId, enabled = true) =>
@@ -25,7 +63,7 @@ describe("determineDueProviders", () => {
     const result = determineDueProviders({
       providers: [provider],
       runs: {},
-      jobCounts: { "france-travail": 0 },
+      jobCounts: createJobCounts({ "france-travail": 0 }),
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
       settings: withSettings("france-travail"),
@@ -39,7 +77,7 @@ describe("determineDueProviders", () => {
     const result = determineDueProviders({
       providers: [provider],
       runs: {},
-      jobCounts: { apec: 0 },
+      jobCounts: createJobCounts({ apec: 0 }),
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
       settings: withSettings("apec", false),
@@ -51,18 +89,15 @@ describe("determineDueProviders", () => {
   it("relance quand aucune offre n'est présente en base", () => {
     const provider = buildProvider("hellowork");
     const runs = {
-      hellowork: {
-        provider: "hellowork",
+      hellowork: buildRun("hellowork", {
         last_run_at: now.toISOString(),
         last_success_at: now.toISOString(),
-        status: "success" as const,
-        error: null,
-      },
+      }),
     };
     const result = determineDueProviders({
       providers: [provider],
       runs,
-      jobCounts: { hellowork: 0 },
+      jobCounts: createJobCounts({ hellowork: 0 }),
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
       settings: withSettings("hellowork"),
@@ -74,19 +109,16 @@ describe("determineDueProviders", () => {
   it("attend 3 jours quand des données fraîches existent", () => {
     const provider = buildProvider("welcometothejungle");
     const runs = {
-      welcometothejungle: {
-        provider: "welcometothejungle",
+      welcometothejungle: buildRun("welcometothejungle", {
         last_run_at: now.toISOString(),
         last_success_at: new Date(now.getTime() - JOB_REFRESH_INTERVAL_MS + 1000).toISOString(),
-        status: "success" as const,
-        error: null,
-      },
+      }),
     };
 
     const result = determineDueProviders({
       providers: [provider],
       runs,
-      jobCounts: { welcometothejungle: 15 },
+      jobCounts: createJobCounts({ welcometothejungle: 15 }),
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
       settings: withSettings("welcometothejungle"),
@@ -98,19 +130,16 @@ describe("determineDueProviders", () => {
   it("relance au-delà du délai de 3 jours", () => {
     const provider = buildProvider("jobteaser");
     const runs = {
-      jobteaser: {
-        provider: "jobteaser",
+      jobteaser: buildRun("jobteaser", {
         last_run_at: new Date(now.getTime() - JOB_REFRESH_INTERVAL_MS - 1).toISOString(),
         last_success_at: new Date(now.getTime() - JOB_REFRESH_INTERVAL_MS - 1).toISOString(),
-        status: "success" as const,
-        error: null,
-      },
+      }),
     };
 
     const result = determineDueProviders({
       providers: [provider],
       runs,
-      jobCounts: { jobteaser: 42 },
+      jobCounts: createJobCounts({ jobteaser: 42 }),
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
       settings: withSettings("jobteaser"),
