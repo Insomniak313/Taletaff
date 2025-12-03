@@ -40,6 +40,7 @@ jobs:
         run: supabase db push --db-url "$SUPABASE_DB_URL"
         env:
           SUPABASE_DB_URL: postgresql://postgres:postgres@localhost:54322/postgres
+        # Connexion explicite au service Postgres local de l'action pour éviter les timeouts réseau.
       - name: Lint
         run: npm run lint
       - name: Type Check
