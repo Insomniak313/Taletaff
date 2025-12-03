@@ -43,7 +43,8 @@ export const fetchRunRows = async (client: JobsClient): Promise<ProviderRunMap> 
   if (!data) {
     return {};
   }
-  return data.reduce<ProviderRunMap>((acc, row) => {
+  const rows = data as ProviderRunRow[];
+  return rows.reduce<ProviderRunMap>((acc, row) => {
     acc[row.provider as JobProviderId] = row as ProviderRunRow;
     return acc;
   }, {});
@@ -82,7 +83,7 @@ export const upsertRunRow = async (
   };
   const { error } = await client
     .from(JOB_PROVIDER_RUNS_TABLE)
-    .upsert(payload, { onConflict: "provider" });
+    .upsert(payload as never, { onConflict: "provider" });
   if (error) {
     throw new Error(error.message);
   }

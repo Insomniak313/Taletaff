@@ -118,7 +118,7 @@ export const providerConfigStore = {
       provider: providerId,
       ...patch,
     };
-    const { error } = await client.from(TABLE_NAME).upsert(payload, { onConflict: "provider" });
+    const { error } = await client.from(TABLE_NAME).upsert(payload as never, { onConflict: "provider" });
     if (error) {
       throw new Error(error.message);
     }

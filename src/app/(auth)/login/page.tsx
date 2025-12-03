@@ -4,6 +4,8 @@ import { AuthCard } from "@/features/auth/components/AuthCard";
 import { AuthForm } from "@/features/auth/components/AuthForm";
 import { ensureAdminAccount } from "@/lib/auth/ensureAdminAccount";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Connexion · Taletaff",
   description: "Reprenez votre recherche d'emploi ultra ciblée en quelques secondes.",

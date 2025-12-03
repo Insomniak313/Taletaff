@@ -92,7 +92,7 @@ const upsertJobs = async (client: JobsClient, rows: JobInsertRow[]): Promise<num
   for (const chunk of chunks) {
     const { data, error } = await client
       .from(JOBS_TABLE)
-      .upsert(chunk, { onConflict: "source,external_id" })
+      .upsert(chunk as never, { onConflict: "source,external_id" })
       .select("id");
 
     if (error) {
