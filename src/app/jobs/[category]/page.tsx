@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { jobCategories, jobCategoryMap } from "@/config/jobCategories";
+import { absoluteUrl, siteMetadata } from "@/config/siteMetadata";
 import { JobSearchSection } from "@/features/jobs/components/JobSearchSection";
 
 interface Props {
@@ -17,10 +18,35 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
     return { title: "Catégorie introuvable · Taletaff" };
   }
 
+  const canonicalUrl = absoluteUrl(`/jobs/${params.category}`);
+  const ogImageUrl = absoluteUrl(siteMetadata.defaultImage);
+
   return {
     title: category.seo.title,
     description: category.seo.description,
     keywords: category.seo.keywords,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title: category.seo.title,
+      description: category.seo.description,
+      url: canonicalUrl,
+      siteName: siteMetadata.organization.name,
+      locale: siteMetadata.locale,
+      type: "website",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: category.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: siteMetadata.twitterHandle,
+      images: [ogImageUrl],
+    },
   };
 };
 
