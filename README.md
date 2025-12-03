@@ -1,71 +1,111 @@
 # Taletaff
 
-Plateforme Next.js hébergée sur Vercel qui connecte les talents aux meilleures opportunités tech, produit, marketing et operations. L'application s'appuie sur Supabase pour la persistance et fournit une expérience responsive propulsée par Tailwind CSS.
+Plateforme Next.js 16 (App Router) hébergée sur Vercel qui aligne Supabase, Tailwind CSS et un orchestrateur de scrapers pour mettre en avant les meilleures offres tech, produit, marketing et operations. L'expérience est pensée mobile-first, typée de bout en bout et optimisée pour Core Web Vitals.
 
-## Fonctionnalités clés
-- Parcours complet d'authentification (inscription, connexion, reset) avec Supabase Auth.
-- Recherche d'offres par catégorie avec filtres en temps réel et pages SEO statiques par métier.
-- Composants React < 100 lignes, typés, organisés par domaines, avec hooks personnalisés (`useAuthForm`, `useJobSearch`).
-- Chargement paresseux et `Suspense` pour les sections non critiques afin d'améliorer le chunking.
-- Docker + Makefile pour un environnement de dev reproductible, CI GitHub Actions, couverture de tests à 100 % (Vitest + Testing Library).
+## Sommaire
+- [Vue rapide](#vue-rapide)
+- [Architecture en bref](#architecture-en-bref)
+- [Stack & dépendances](#stack--dépendances)
+- [Démarrage rapide](#démarrage-rapide)
+- [Commandes principales](#commandes-principales)
+- [Structure du repo](#structure-du-repo)
+- [Supabase & données](#supabase--données)
+- [Tests & qualité](#tests--qualité)
+- [Documentation détaillée](#documentation-détaillée)
 
-## Stack
-- Next.js 16 (App Router) + React 19
-- Tailwind CSS 3.4 + composants utilitaires typés
-- Supabase (auth + données)
-- Vitest / Testing Library pour les tests unitaires et d'intégration
+## Vue rapide
+- Authentification complète (inscription, connexion, reset) via Supabase Auth et formulaires réutilisables (`AuthForm`, `useAuthForm`).
+- Parcours SEO-first : pages statiques par catégorie (`/jobs/[category]`), sitemap généré, métadonnées consolidées dans `siteMetadata`.
+- Dashboard multi-rôles protégé par `RoleGuard` avec vues admin, employeur, candidat et modération.
+- Agrégation d'offres via 10+ providers français + Remotive, normalisation et upsert de masse (`jobScraper`, `jobScheduler`).
+- Composants UI < 100 lignes, stylés avec Tailwind et rendus en mode RSC + Suspense pour les sections non critiques.
+- Observabilité par CI GitHub Actions (lint, typecheck, Vitest coverage 100 %) et cron scheduler (`POST /api/jobs/sync`).
+
+## Architecture en bref
+- **App Router** : routes publiques (`src/app`), API Next (auth, jobs, cron) et pages spécialisées (dashboard par rôle).
+- **Features isolées** : `src/features/auth`, `src/features/jobs`, `src/features/dashboard` regroupent composants, hooks et services dédiés pour limiter les couplages.
+- **Libs partagées** : `src/lib/env.*` impose des variables typées, `supabase/browser|server` encapsulent les clients.
+- **Ingestion d'offres** : `providers` définit chaque source, `jobScraper` normalise puis `jobScheduler` pilote l'exécution et loggue les runs dans Supabase.
+- **API internes** : `/api/jobs` expose la recherche, `/api/jobs/bootstrap` déclenche Remotive (public), `/api/jobs/sync` est protégé par `JOB_CRON_SECRET`.
+
+## Stack & dépendances
+- Next.js 16 + React 19 (Server Components, Suspense, dynamic imports ciblés).
+- Tailwind CSS 3.4 avec design tokens utilitaires (voir `src/app/globals.css`).
+- Supabase (Postgres + Auth) géré via Supabase CLI et migrations versionnées dans `supabase/migrations`.
+- Vitest + Testing Library + MSW pour la simulation côté réseau.
+- ESLint 9 + TypeScript 5.6 (mode strict) + configuration App Router.
+- Dockerfile multi-étapes et `docker-compose.yml` pour un environnement de dev hermétique.
 
 ## Démarrage rapide
-```bash
-cp .env.example .env # renseignez vos clés Supabase
-npm install
-npm run dev
-```
+1. **Pré-requis** : Node 20, npm 10, Supabase CLI (`brew install supabase/tap/supabase`), Docker (optionnel).
+2. **Config**  
+   ```bash
+   cp .env.example .env
+   # Renseignez les clés Supabase + endpoints providers requis
+   ```
+3. **Installer & lancer**  
+   ```bash
+   npm install
+   npm run dev
+   ```
+4. **Base locale (optionnel mais conseillé)**  
+   ```bash
+   supabase db start            # démarre Postgres local
+   supabase db reset            # applique toutes les migrations SQL
+   ```
+5. **Injecter des offres démo** : exécutez `POST http://localhost:3000/api/jobs/bootstrap` pour importer Remotive.
 
 ### Avec Docker
 ```bash
-make docker-up        # build + run en mode dev (hot reload)
+make docker-up        # build + run dev (hot reload 0.0.0.0:3000)
 make docker-logs      # suivre les logs
-make docker-down      # arrêter les services
+make docker-down      # arrêter et nettoyer
 ```
 
-## Scripts utiles
-- `npm run dev` : serveur Next.js avec hot reload
-- `npm run build` : build Vercel-ready (code splitting optimisé)
-- `npm run start` : démarrer le build
-- `npm run lint` : ESLint (core web vitals)
-- `npm run typecheck` : vérification TS stricte
-- `npm run test` / `npm run test:watch` : Vitest avec couverture 100 %
+## Commandes principales
+- `npm run dev` : Next.js + HMR.
+- `npm run build` : build production (analyzers + code splitting optimisé).
+- `npm run start` : lance le build localement (simulateur Vercel).
+- `npm run lint` : ESLint (config Next Core Web Vitals).
+- `npm run typecheck` : `tsc --noEmit`.
+- `npm run test` / `npm run test:watch` : Vitest + couverture V8 100 %.
 
-## Structure
+## Structure du repo
 ```
 src/
-  app/                  # Routes Next.js (auth, jobs, API)
-  components/           # Layout + sections UI
-  config/               # Métadonnées site + catégories
-  features/             # Composants métier (auth, jobs)
-  hooks/                # Hooks personnalisés (auth/job search)
-  lib/                  # Clients Supabase + env typés
-  services/             # Accès Supabase côté serveur / client
-  types/ & utils/       # Typages partagés + helpers
+  app/                  # Routes Next.js (auth, jobs, dashboard, API)
+  components/           # Layout + sections UI partagées
+  config/               # Métadonnées site, catégories, routes par rôle
+  features/             # Domaines auth / jobs / dashboard
+    jobs/
+      providers/        # Connecteurs + configuration dynamique
+      scheduler/        # Orchestrateur + règles d'éligibilité
+      scraper/          # Normalisation + upsert Supabase
+  hooks/                # Hooks personnalisés (auth, recherche)
+  lib/                  # Clients Supabase + env typés (client/server)
+  services/             # Accès Supabase côté serveur/client
+  types/ & utils/       # Typages partagés + helpers format
+supabase/migrations/    # Schéma Postgres versionné (jobs, runs, config)
 ```
 
-## Supabase
-1. Créez un projet Supabase et une table `jobs` avec les colonnes : `id uuid`, `title text`, `company text`, `location text`, `category text`, `description text`, `remote boolean`, `salary_min numeric`, `salary_max numeric`, `tags text[]`, `created_at timestamptz`.
-2. Activez RLS et ajoutez les policies souhaitées.
-3. Renseignez les clés dans `.env` (seule la clé `SUPABASE_SERVICE_ROLE_KEY` est utilisée côté serveur).
+## Supabase & données
+1. **Migrations** : exécutez `supabase db push` pour créer `jobs`, `job_provider_runs`, `job_provider_config` ainsi que les index et triggers `updated_at`.
+2. **Sécurité** : RLS activée (policy `jobs public read`). Les écritures passent exclusivement par les API Next côté serveur ou par le scheduler.
+3. **Providers** : chaque source peut être pilotée par env (`FRANCE_TRAVAIL_API_URL`, …) ou via la table `job_provider_config`. Voir `providerConfigStore` pour l'ordre de priorité.
+4. **Cron** : appelez `/api/jobs/sync` avec l'en-tête `x-cron-secret: $JOB_CRON_SECRET` (configurable dans `.env`). En production, brancher un cron Vercel ou GitHub Actions schedule.
+5. **Bootstrap** : l'endpoint `/api/jobs/bootstrap` importe Remotive sans secret pour disposer de données dès l'onboarding produit.
 
-## Tests & Qualité
-- Couverture minimale forcée (100 % lignes/fonctions/branches) via Vitest.
-- Tests unitaires : services, hooks, formatters, configuration.
-- Tests d'intégration : composants React clés et flux des hooks.
-- Surveillance CI : un cron nightly relance lint, typecheck et tests pour détecter les régressions silencieuses.
-- CI (/.github/workflows/ci.yml) : lint + typecheck + tests sur Node 20.
+## Tests & qualité
+- Couverture 100 % exigée (`vitest run --coverage`) : tests unitaires (`src/__tests__`) couvrent services, hooks, config et composants critiques.
+- ESLint + TypeScript strict bloquent les PR via la CI GitHub Actions (`.github/workflows/ci.yml`).
+- Les migrations sont rejouées dans la CI via `supabase db push` contre un Postgres éphémère.
+- Les PR doivent vérifier accessibilité (Tailwind + ARIA), LCP < 2,5 s (Lazy load sections non critiques), budget bundle < 160 kB grâce au code splitting.
 
-## Déploiement Vercel
-1. Poussez sur GitHub, créez un projet Vercel connecté.
-2. Renseignez les variables d'environnement identiques à `.env`.
-3. Ajoutez Supabase comme ressource externe.
+## Documentation détaillée
+- `docs/README.md` : table des matières & conventions.
+- `docs/architecture.md` : schéma complet (flux front, ingestion, SEO).
+- `docs/development.md` : setup local, outils, debug et données seed.
+- `docs/operations.md` : déploiement Vercel, secrets, scheduler & monitoring.
+- `docs/quality.md` : stratégie de tests, obligations perf/accessibilité, checklist PR.
 
-## Makefile
-Consultez `Makefile` pour automatiser les tâches (install, lint, test, docker). Les commandes s'intègrent facilement dans la CI/CD.
+> Besoin d'un panorama plus approfondi ? Consultez le dossier `docs/` pour les guides détaillés, schémas d'architecture et checklists opérationnelles.
