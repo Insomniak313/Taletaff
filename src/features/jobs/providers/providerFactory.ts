@@ -103,7 +103,9 @@ export const createJsonProvider = (definition: JsonProviderDefinition): JobProvi
       });
 
       const method = definition.method ?? "GET";
-      const headers = normalizeHeaders(definition.headers ? definition.headers() : undefined);
+      const headers: HeadersInit | undefined = normalizeHeaders(
+        definition.headers ? definition.headers() : undefined
+      );
       const bodyPayload =
         typeof definition.body === "function" ? definition.body(context) : definition.body;
 
