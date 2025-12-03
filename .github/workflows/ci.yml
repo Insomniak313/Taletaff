@@ -38,8 +38,6 @@ jobs:
           version: latest
       - name: Apply Supabase migrations
         run: supabase db push --db-url "$SUPABASE_DB_URL"
-        env:
-          SUPABASE_DB_URL: postgresql://postgres:postgres@localhost:54322/postgres
       - name: Lint
         run: npm run lint
       - name: Type Check
