@@ -2,6 +2,7 @@ import type {
   JobProvider,
   JobProviderContext,
   JobProviderId,
+  JobProviderSettings,
   ProviderJob,
 } from "@/features/jobs/providers/types";
 
@@ -17,7 +18,7 @@ type JsonProviderDefinition = {
   method?: "GET" | "POST";
   query?: Record<string, string | number | undefined>;
   buildQuery?: (context: JobProviderContext) => Record<string, string | number | undefined>;
-  headers?: () => Record<string, string | undefined> | undefined;
+  headers?: (settings?: JobProviderSettings) => Record<string, string | undefined> | undefined;
   body?: Record<string, unknown> | ((context: JobProviderContext) => Record<string, unknown>);
   itemsPath?: JsonItemsPath;
   maxBatchSize?: number;
@@ -78,18 +79,23 @@ export const createJsonProvider = (definition: JsonProviderDefinition): JobProvi
     return entries.length > 0 ? Object.fromEntries(entries) : undefined;
   };
 
+  const resolveEndpoint = (settings?: JobProviderSettings): string | undefined => {
+    return settings?.endpoint ?? definition.endpoint;
+  };
+
   return {
     id: definition.id,
     label: definition.label,
     defaultCategory: definition.defaultCategory,
     maxBatchSize: definition.maxBatchSize ?? 200,
-    isConfigured: () => Boolean(definition.endpoint),
-    async fetchJobs(context) {
-      if (!definition.endpoint) {
+    isConfigured: (settings) => Boolean(resolveEndpoint(settings)),
+    async fetchJobs(context, settings) {
+      const endpoint = resolveEndpoint(settings);
+      if (!endpoint) {
         return [];
       }
 
-      const url = new URL(definition.endpoint);
+      const url = new URL(endpoint);
       const finalQuery = {
         ...(definition.query ?? {}),
         ...(definition.buildQuery ? definition.buildQuery(context) : {}),
@@ -103,9 +109,14 @@ export const createJsonProvider = (definition: JsonProviderDefinition): JobProvi
       });
 
       const method = definition.method ?? "GET";
-      const headers: HeadersInit | undefined = normalizeHeaders(
-        definition.headers ? definition.headers() : undefined
-      );
+      const baseHeaders = definition.headers ? definition.headers(settings) : undefined;
+      const authHeaders = settings?.authToken ? { Authorization: `Bearer ${settings.authToken}` } : undefined;
+      const mergedHeaders = {
+        ...(baseHeaders ?? {}),
+        ...(authHeaders ?? {}),
+        ...(settings?.headers ?? {}),
+      };
+      const headers: HeadersInit | undefined = normalizeHeaders(mergedHeaders);
       const bodyPayload =
         typeof definition.body === "function" ? definition.body(context) : definition.body;
 

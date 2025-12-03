@@ -1,11 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import type { JobProvider, JobProviderId, ProviderJob } from "@/features/jobs/providers";
+import type {
+  JobProvider,
+  JobProviderId,
+  JobProviderSettings,
+  ProviderJob,
+} from "@/features/jobs/providers";
 
 const JOBS_TABLE = "jobs";
 const UPSERT_CHUNK_SIZE = 200;
 
-type JobsClient = SupabaseClient<any, "public">;
+type JobsClient = SupabaseClient<Record<string, unknown>, "public">;
 
 interface JobInsertRow {
   title: string;
@@ -87,7 +92,7 @@ const upsertJobs = async (client: JobsClient, rows: JobInsertRow[]): Promise<num
   for (const chunk of chunks) {
     const { data, error } = await client
       .from(JOBS_TABLE)
-      .upsert(chunk, { onConflict: "source,external_id" })
+      .upsert(chunk as never, { onConflict: "source,external_id" })
       .select("id");
 
     if (error) {
@@ -102,13 +107,14 @@ const upsertJobs = async (client: JobsClient, rows: JobInsertRow[]): Promise<num
 
 export const scrapeProvider = async (
   provider: JobProvider,
+  settings: JobProviderSettings | undefined,
   client: JobsClient = supabaseAdmin()
 ): Promise<JobScraperResult> => {
-  if (!provider.isConfigured()) {
+  if (!provider.isConfigured(settings)) {
     return { providerId: provider.id, fetched: 0, persisted: 0 };
   }
 
-  const jobs = await provider.fetchJobs({ limit: provider.maxBatchSize });
+  const jobs = await provider.fetchJobs({ limit: provider.maxBatchSize }, settings);
   const rows = jobs
     .map((job) => toJobRow(provider, job))
     .filter((row): row is JobInsertRow => Boolean(row));

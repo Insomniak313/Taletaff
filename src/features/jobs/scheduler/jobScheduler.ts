@@ -1,16 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { JOB_PROVIDERS } from "@/features/jobs/providers";
-import type { JobProvider, JobProviderId } from "@/features/jobs/providers";
+import type { JobProvider, JobProviderId, JobProviderSettings } from "@/features/jobs/providers";
 import { scrapeProvider } from "@/features/jobs/scraper/jobScraper";
+import { providerConfigStore } from "@/features/jobs/providers/providerConfigStore";
 
 const JOB_PROVIDER_RUNS_TABLE = "job_provider_runs";
 const JOBS_TABLE = "jobs";
 export const JOB_REFRESH_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000;
 
-type JobsClient = SupabaseClient<any, "public">;
+type JobsClient = SupabaseClient<Record<string, unknown>, "public">;
 
-type ProviderRunRow = {
+export type ProviderRunRow = {
   provider: JobProviderId;
   last_run_at: string | null;
   last_success_at: string | null;
@@ -34,7 +35,7 @@ export interface SchedulerSummary {
 
 type ProviderRunMap = Partial<Record<JobProviderId, ProviderRunRow>>;
 
-const fetchRunRows = async (client: JobsClient): Promise<ProviderRunMap> => {
+export const fetchRunRows = async (client: JobsClient): Promise<ProviderRunMap> => {
   const { data, error } = await client.from(JOB_PROVIDER_RUNS_TABLE).select("*");
   if (error) {
     throw new Error(error.message);
@@ -42,13 +43,14 @@ const fetchRunRows = async (client: JobsClient): Promise<ProviderRunMap> => {
   if (!data) {
     return {};
   }
-  return data.reduce<ProviderRunMap>((acc, row) => {
+  const rows = data as ProviderRunRow[];
+  return rows.reduce<ProviderRunMap>((acc, row) => {
     acc[row.provider as JobProviderId] = row as ProviderRunRow;
     return acc;
   }, {});
 };
 
-const fetchJobCounts = async (
+export const fetchJobCounts = async (
   client: JobsClient,
   providers: JobProviderId[]
 ): Promise<Record<JobProviderId, number>> => {
@@ -70,7 +72,7 @@ const fetchJobCounts = async (
   return Object.fromEntries(entries) as Record<JobProviderId, number>;
 };
 
-const upsertRunRow = async (
+export const upsertRunRow = async (
   client: JobsClient,
   providerId: JobProviderId,
   patch: Partial<ProviderRunRow>
@@ -81,7 +83,7 @@ const upsertRunRow = async (
   };
   const { error } = await client
     .from(JOB_PROVIDER_RUNS_TABLE)
-    .upsert(payload, { onConflict: "provider" });
+    .upsert(payload as never, { onConflict: "provider" });
   if (error) {
     throw new Error(error.message);
   }
@@ -93,6 +95,7 @@ interface DetermineDueProvidersArgs {
   jobCounts: Record<JobProviderId, number | undefined>;
   now: Date;
   refreshIntervalMs: number;
+  settings: Partial<Record<JobProviderId, JobProviderSettings | undefined>>;
 }
 
 export const determineDueProviders = ({
@@ -101,9 +104,10 @@ export const determineDueProviders = ({
   jobCounts,
   now,
   refreshIntervalMs,
+  settings,
 }: DetermineDueProvidersArgs): JobProvider[] => {
   return providers.filter((provider) => {
-    if (!provider.isConfigured()) {
+    if (!provider.isConfigured(settings[provider.id])) {
       return false;
     }
 
@@ -125,12 +129,13 @@ export const determineDueProviders = ({
 
 const summarizeProviderState = (
   provider: JobProvider,
-  result: SchedulerSummaryItem | null
+  result: SchedulerSummaryItem | null,
+  settings: JobProviderSettings | undefined
 ): SchedulerSummaryItem => {
   if (result) {
     return result;
   }
-  if (!provider.isConfigured()) {
+  if (!provider.isConfigured(settings)) {
     return { providerId: provider.id, status: "disabled" };
   }
   return { providerId: provider.id, status: "skipped" };
@@ -144,9 +149,10 @@ export const jobScheduler = {
     const providers = JOB_PROVIDERS;
     const now = new Date();
 
-    const [runs, jobCounts] = await Promise.all([
+    const [runs, jobCounts, settingsMap] = await Promise.all([
       fetchRunRows(client),
       fetchJobCounts(client, providers.map((provider) => provider.id)),
+      providerConfigStore.fetchSettingsMap(client),
     ]);
 
     const dueProviders = determineDueProviders({
@@ -155,11 +161,13 @@ export const jobScheduler = {
       jobCounts,
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
+      settings: settingsMap,
     });
 
     const items: SchedulerSummaryItem[] = [];
 
     for (const provider of dueProviders) {
+      const providerSettings = settingsMap[provider.id];
       await upsertRunRow(client, provider.id, {
         status: "running",
         last_run_at: new Date().toISOString(),
@@ -167,7 +175,7 @@ export const jobScheduler = {
       });
 
       try {
-        const result = await scrapeProvider(provider, client);
+        const result = await scrapeProvider(provider, providerSettings, client);
         await upsertRunRow(client, provider.id, {
           status: "success",
           last_success_at: new Date().toISOString(),
@@ -195,7 +203,7 @@ export const jobScheduler = {
 
     const flattened = providers.map((provider) => {
       const existing = items.find((item) => item.providerId === provider.id) ?? null;
-      return summarizeProviderState(provider, existing);
+      return summarizeProviderState(provider, existing, settingsMap[provider.id]);
     });
 
     return {
@@ -203,5 +211,50 @@ export const jobScheduler = {
       dueProviders: dueProviders.map((provider) => provider.id),
       items: flattened,
     };
+  },
+  async runProvider(providerId: JobProviderId): Promise<SchedulerSummaryItem> {
+    const provider = JOB_PROVIDERS.find((entry) => entry.id === providerId);
+    if (!provider) {
+      throw new Error(`Provider ${providerId} introuvable`);
+    }
+
+    const client = supabaseAdmin();
+    const settings = await providerConfigStore.fetchSettings(providerId, client);
+
+    if (!provider.isConfigured(settings)) {
+      throw new Error(`Le provider ${provider.label} n'est pas configuré`);
+    }
+
+    await upsertRunRow(client, providerId, {
+      status: "running",
+      last_run_at: new Date().toISOString(),
+      error: null,
+    });
+
+    try {
+      const result = await scrapeProvider(provider, settings, client);
+      await upsertRunRow(client, providerId, {
+        status: "success",
+        last_success_at: new Date().toISOString(),
+        error: null,
+      });
+      return {
+        providerId,
+        status: "success",
+        fetched: result.fetched,
+        persisted: result.persisted,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur scraper";
+      await upsertRunRow(client, providerId, {
+        status: "failed",
+        error: message,
+      });
+      return {
+        providerId,
+        status: "error",
+        message,
+      };
+    }
   },
 };

@@ -29,11 +29,18 @@ export interface JobProviderContext {
   limit?: number;
 }
 
+export interface JobProviderSettings {
+  endpoint?: string;
+  authToken?: string;
+  headers?: Record<string, string>;
+  metadata?: Record<string, unknown>;
+}
+
 export interface JobProvider {
   id: JobProviderId;
   label: string;
   defaultCategory: string;
   maxBatchSize?: number;
-  isConfigured: () => boolean;
-  fetchJobs: (context: JobProviderContext) => Promise<ProviderJob[]>;
+  isConfigured: (settings?: JobProviderSettings) => boolean;
+  fetchJobs: (context: JobProviderContext, settings?: JobProviderSettings) => Promise<ProviderJob[]>;
 }
