@@ -3,9 +3,12 @@ export interface AuthCredentials {
   password: string;
 }
 
+export type UserRole = "jobseeker" | "employer" | "moderator" | "admin";
+
 export interface SignUpPayload extends AuthCredentials {
   fullName: string;
   categoryPreferences: string[];
+  role: UserRole;
 }
 
 export interface ForgotPasswordPayload {

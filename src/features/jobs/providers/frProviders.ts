@@ -1,4 +1,4 @@
-import type { JobProvider } from "@/features/jobs/providers/types";
+import type { JobProvider, JobProviderSettings } from "@/features/jobs/providers/types";
 import {
   booleanFrom,
   coerceTags,
@@ -121,10 +121,12 @@ const buildProviderJob = (
   };
 };
 
-const bearerHeaders = (tokenEnvKey: string) => {
-  const token = optionalEnv(tokenEnvKey);
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-};
+const bearerHeaders =
+  (tokenEnvKey: string) =>
+  (settings?: JobProviderSettings): Record<string, string> | undefined => {
+    const token = settings?.authToken ?? optionalEnv(tokenEnvKey);
+    return token ? { Authorization: `Bearer ${token}` } : undefined;
+  };
 
 const frJobProviders: JobProvider[] = [
   createJsonProvider({
@@ -134,7 +136,7 @@ const frJobProviders: JobProvider[] = [
     defaultCategory: "engineering",
     itemsPath: ["resultats"],
     query: { range: "0-199" },
-    headers: () => bearerHeaders("FRANCE_TRAVAIL_API_TOKEN"),
+    headers: bearerHeaders("FRANCE_TRAVAIL_API_TOKEN"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["id", "offerId"],
@@ -156,7 +158,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("APEC_API_URL"),
     defaultCategory: "operations",
     itemsPath: ["offers"],
-    headers: () => bearerHeaders("APEC_API_TOKEN"),
+    headers: bearerHeaders("APEC_API_TOKEN"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["offerId", "id"],
@@ -178,7 +180,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("METEOJOB_API_URL"),
     defaultCategory: "marketing",
     itemsPath: ["data", "jobs"],
-    headers: () => bearerHeaders("METEOJOB_API_KEY"),
+    headers: bearerHeaders("METEOJOB_API_KEY"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["jobId", "id"],
@@ -200,7 +202,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("HELLOWORK_API_URL"),
     defaultCategory: "engineering",
     itemsPath: ["jobs"],
-    headers: () => bearerHeaders("HELLOWORK_API_KEY"),
+    headers: bearerHeaders("HELLOWORK_API_KEY"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["reference", "id"],
@@ -222,7 +224,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("WTTJ_API_URL"),
     defaultCategory: "product",
     itemsPath: ["offers"],
-    headers: () => bearerHeaders("WTTJ_API_TOKEN"),
+    headers: bearerHeaders("WTTJ_API_TOKEN"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["id", "slug"],
@@ -244,7 +246,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("JOBTEASER_API_URL"),
     defaultCategory: "marketing",
     itemsPath: ["results"],
-    headers: () => bearerHeaders("JOBTEASER_API_TOKEN"),
+    headers: bearerHeaders("JOBTEASER_API_TOKEN"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["id", "offerId"],
@@ -266,7 +268,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("CHOOSEYOURBOSS_API_URL"),
     defaultCategory: "engineering",
     itemsPath: ["jobs"],
-    headers: () => bearerHeaders("CHOOSEYOURBOSS_API_KEY"),
+    headers: bearerHeaders("CHOOSEYOURBOSS_API_KEY"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["id", "slug"],
@@ -288,7 +290,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("MONSTER_FR_API_URL"),
     defaultCategory: "operations",
     itemsPath: ["jobList"],
-    headers: () => bearerHeaders("MONSTER_FR_API_KEY"),
+    headers: bearerHeaders("MONSTER_FR_API_KEY"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["jobId", "id"],
@@ -310,7 +312,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("INDEED_FR_API_URL"),
     defaultCategory: "marketing",
     itemsPath: ["results"],
-    headers: () => bearerHeaders("INDEED_FR_API_TOKEN"),
+    headers: bearerHeaders("INDEED_FR_API_TOKEN"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["jobkey", "id"],
@@ -332,7 +334,7 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("TALENT_IO_API_URL"),
     defaultCategory: "engineering",
     itemsPath: ["jobs"],
-    headers: () => bearerHeaders("TALENT_IO_API_TOKEN"),
+    headers: bearerHeaders("TALENT_IO_API_TOKEN"),
     mapItem: (record) =>
       buildProviderJob(record, {
         externalIdKeys: ["id", "slug"],

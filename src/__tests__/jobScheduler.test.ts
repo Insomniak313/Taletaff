@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { determineDueProviders, JOB_REFRESH_INTERVAL_MS } from "@/features/jobs/scheduler/jobScheduler";
 import type { JobProvider, JobProviderId } from "@/features/jobs/providers";
+import type { JobProviderSettings } from "@/features/jobs/providers/types";
 
 const buildProvider = (id: JobProviderId, enabled = true): JobProvider => ({
   id,
@@ -10,6 +11,11 @@ const buildProvider = (id: JobProviderId, enabled = true): JobProvider => ({
   isConfigured: () => enabled,
   fetchJobs: async () => [],
 });
+
+const withSettings = (providerId: JobProviderId, enabled = true) =>
+  ({
+    [providerId]: enabled ? { endpoint: "https://api.example.com" } : undefined,
+  }) as Partial<Record<JobProviderId, JobProviderSettings | undefined>>;
 
 describe("determineDueProviders", () => {
   const now = new Date("2025-12-03T10:00:00Z");
@@ -22,6 +28,7 @@ describe("determineDueProviders", () => {
       jobCounts: { "france-travail": 0 },
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
+      settings: withSettings("france-travail"),
     });
 
     expect(result).toEqual([provider]);
@@ -35,6 +42,7 @@ describe("determineDueProviders", () => {
       jobCounts: { apec: 0 },
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
+      settings: withSettings("apec", false),
     });
 
     expect(result).toEqual([]);
@@ -57,6 +65,7 @@ describe("determineDueProviders", () => {
       jobCounts: { hellowork: 0 },
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
+      settings: withSettings("hellowork"),
     });
 
     expect(result).toEqual([provider]);
@@ -80,6 +89,7 @@ describe("determineDueProviders", () => {
       jobCounts: { welcometothejungle: 15 },
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
+      settings: withSettings("welcometothejungle"),
     });
 
     expect(result).toEqual([]);
@@ -103,6 +113,7 @@ describe("determineDueProviders", () => {
       jobCounts: { jobteaser: 42 },
       now,
       refreshIntervalMs: JOB_REFRESH_INTERVAL_MS,
+      settings: withSettings("jobteaser"),
     });
 
     expect(result).toEqual([provider]);

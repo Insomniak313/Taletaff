@@ -24,6 +24,7 @@ export const authService = {
         data: {
           full_name: payload.fullName,
           category_preferences: payload.categoryPreferences,
+          role: payload.role,
         },
         emailRedirectTo: clientEnv.defaultRedirect,
       },

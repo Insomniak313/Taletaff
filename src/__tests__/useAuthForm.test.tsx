@@ -50,6 +50,7 @@ describe("useAuthForm", () => {
         password: "secret",
         fullName: "Test",
         categoryPreferences: ["product"],
+        role: "jobseeker",
       });
     });
 
