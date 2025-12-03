@@ -17,12 +17,12 @@ export const Hero = () => (
         </span>
       </span>
       <h1 className="text-4xl font-semibold leading-tight text-ink-900 md:text-5xl">
-        Trouvez un emploi aligné avec vos ambitions.
+        Le bon job, du champ à la scale-up.
       </h1>
       <p className="mx-auto max-w-3xl text-lg text-ink-600">
-        Taletaff combine expertise humaine et matching intelligent pour vous ouvrir les portes des entreprises
-        qui vous ressemblent. Transparence, rythme d&apos;exécution et coaching premium, réunis dans une expérience
-        fluide.
+        Taletaff accompagne les talents de la restauration, de l&apos;agriculture, de l&apos;industrie et de la tech
+        avec un mix de coaching humain et d&apos;outils intelligents. Vous gagnez un parcours fluide, des offres
+        vérifiées et le même niveau d&apos;exigence quel que soit votre métier.
       </p>
       <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-center">
         <Link

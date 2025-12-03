@@ -2,6 +2,32 @@ import type { JobCategory } from "@/types/job";
 
 export const jobCategories: JobCategory[] = [
   {
+    slug: "restauration",
+    title: "Restauration & Hospitalité",
+    description:
+      "Stabilisez vos équipes cuisine, salle ou événementiel avec des plannings anticipés, des salaires transparents et des responsables engagés.",
+    hero: "Des maisons et concepts qui valorisent leurs brigades",
+    seo: {
+      title: "Offres d'emploi Restauration & Hospitalité · Taletaff",
+      description:
+        "Chefs(fe)s, managers F&B, direction d'hôtel, baristas : accédez aux établissements qui investissent vraiment dans leurs équipes.",
+      keywords: ["restauration", "hospitalite", "chef", "manager f&b", "service en salle"]
+    },
+  },
+  {
+    slug: "agriculture",
+    title: "Agriculture & Territoires",
+    description:
+      "Exploitation, production maraîchère, coopératives ou logistique : sécurisez des missions qui respectent les saisonnalités et la qualité de vie.",
+    hero: "Valorisez les filières vivantes partout en France",
+    seo: {
+      title: "Offres d'emploi Agriculture & Territoires · Taletaff",
+      description:
+        "Chefs d'exploitation, techniciens agricoles, logisticiens de coopératives et profils agritech : trouvez des partenaires durables.",
+      keywords: ["agriculture", "maraichage", "viticulture", "cooperative", "logistique"]
+    },
+  },
+  {
     slug: "product",
     title: "Produit",
     description:

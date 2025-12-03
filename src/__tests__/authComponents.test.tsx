@@ -60,6 +60,7 @@ describe("Composants auth", () => {
       name: /Produit|Ingénierie|Marketing|Operations/,
     });
     fireEvent.click(preferenceButtons[0]);
+    fireEvent.click(preferenceButtons[0]);
     fireEvent.click(preferenceButtons[1]);
     fireEvent.click(screen.getByRole("button", { name: /Créer mon compte/i }));
     expect(submit).toHaveBeenCalled();

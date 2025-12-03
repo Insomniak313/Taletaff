@@ -42,8 +42,8 @@ describe("UI components", () => {
         <InsightList />
       </div>
     );
-    expect(screen.getByText(/ambitions/i)).toBeInTheDocument();
-    expect(screen.getByText(/vérifié/i)).toBeInTheDocument();
+    expect(screen.getByText(/champ à la scale-up/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/vérifié/i).length).toBeGreaterThan(0);
   });
 
   it("affiche la grille de catégories", () => {

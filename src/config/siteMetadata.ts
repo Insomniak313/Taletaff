@@ -16,10 +16,13 @@ const restrictedRoutes = [
 ] as const;
 
 const defaultKeywords = [
+  "emploi restauration",
+  "emploi agriculture",
   "emploi tech",
-  "startup",
+  "industrie",
+  "logistique",
+  "services essentiels",
   "product management",
-  "ingénierie logiciel",
   "marketing digital",
   "operations",
   "remote",
@@ -37,7 +40,7 @@ export const absoluteUrl = (path = "/") => {
 export const siteMetadata = {
   title: "Taletaff · Trouvez un emploi qui a du sens",
   description:
-    "Plateforme Next.js propulsée par Supabase pour sourcer les meilleures offres tech, produit, marketing et ops avec un accompagnement humain.",
+    "Plateforme Next.js propulsée par Supabase pour sourcer les meilleures offres restauration, agriculture, industrie ou tech avec un accompagnement humain.",
   siteUrl: normalizedSiteUrl,
   defaultImage: "/window.svg",
   twitterHandle: "@taletaff",
