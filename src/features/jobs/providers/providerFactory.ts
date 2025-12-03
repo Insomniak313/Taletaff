@@ -17,7 +17,7 @@ type JsonProviderDefinition = {
   method?: "GET" | "POST";
   query?: Record<string, string | number | undefined>;
   buildQuery?: (context: JobProviderContext) => Record<string, string | number | undefined>;
-  headers?: () => Record<string, string | undefined>;
+  headers?: () => Record<string, string | undefined> | undefined;
   body?: Record<string, unknown> | ((context: JobProviderContext) => Record<string, unknown>);
   itemsPath?: JsonItemsPath;
   maxBatchSize?: number;
