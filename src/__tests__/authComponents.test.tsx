@@ -1,12 +1,17 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthCard } from "@/features/auth/components/AuthCard";
 import { AuthForm } from "@/features/auth/components/AuthForm";
 import { ForgotPasswordForm } from "@/features/auth/components/ForgotPasswordForm";
 
-const submit = vi.fn();
+const submit = vi.fn().mockResolvedValue(true);
 const reset = vi.fn();
 const state = { isLoading: false, hasError: false, message: "" };
+const replaceMock = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: replaceMock }),
+}));
 
 vi.mock("@/hooks/useAuthForm", () => ({
   useAuthForm: () => ({
@@ -19,9 +24,11 @@ vi.mock("@/hooks/useAuthForm", () => ({
 describe("Composants auth", () => {
   beforeEach(() => {
     submit.mockClear();
+    submit.mockResolvedValue(true);
     state.isLoading = false;
     state.hasError = false;
     state.message = "";
+    replaceMock.mockClear();
   });
 
   it("rend l'AuthCard", () => {
@@ -43,6 +50,18 @@ describe("Composants auth", () => {
     });
     fireEvent.submit(screen.getByRole("button", { name: /Se connecter/i }));
     expect(submit).toHaveBeenCalled();
+  });
+
+  it("redirige vers le dashboard après un login réussi", async () => {
+    render(<AuthForm mode="login" />);
+    fireEvent.change(screen.getByLabelText(/Email/i), {
+      target: { value: "me@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText(/Mot de passe/i), {
+      target: { value: "secret" },
+    });
+    fireEvent.submit(screen.getByRole("button", { name: /Se connecter/i }));
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/dashboard"));
   });
 
   it("gère la sélection des préférences en signup", () => {
