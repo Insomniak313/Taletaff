@@ -19,25 +19,31 @@ describe("useAuthForm", () => {
   it("met à jour l'état après un login réussi", async () => {
     signIn.mockResolvedValueOnce(undefined);
     const { result } = renderHook(() => useAuthForm("login"));
+    let wasSuccessful = false;
 
     await act(async () => {
-      await result.current.submit({ email: "me@example.com", password: "secret" });
+      wasSuccessful = await result.current.submit({ email: "me@example.com", password: "secret" });
     });
 
+    expect(wasSuccessful).toBe(true);
     expect(result.current.state.isLoading).toBe(false);
     expect(result.current.state.message).toContain("Redirection");
   });
 
   it("retourne une erreur lorsque l'API échoue", async () => {
-    signIn.mockRejectedValueOnce(new Error("invalid"));
+    signIn.mockRejectedValueOnce(new Error("Invalid login credentials"));
     const { result } = renderHook(() => useAuthForm("login"));
+    let wasSuccessful = true;
 
     await act(async () => {
-      await result.current.submit({ email: "bad@example.com", password: "nope" });
+      wasSuccessful = await result.current.submit({ email: "bad@example.com", password: "nope" });
     });
 
+    expect(wasSuccessful).toBe(false);
     expect(result.current.state.hasError).toBe(true);
-    expect(result.current.state.message).toBe("invalid");
+    expect(result.current.state.message).toBe(
+      "Identifiants incorrects. Vérifiez votre email ou votre mot de passe."
+    );
   });
 
   it("supporte l'inscription", async () => {
@@ -72,7 +78,9 @@ describe("useAuthForm", () => {
     await act(async () => {
       await result.current.submit({ email: "me@example.com", password: "secret" });
     });
-    expect(result.current.state.message).toBe("Une erreur inattendue est survenue.");
+    expect(result.current.state.message).toBe(
+      "Connexion impossible pour le moment. Réessayez dans quelques instants."
+    );
   });
 
   it("réinitialise l'état via la fonction reset", () => {

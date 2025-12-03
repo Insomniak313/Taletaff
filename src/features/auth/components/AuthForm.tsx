@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/ui/InputField";
 import { useAuthForm } from "@/hooks/useAuthForm";
@@ -34,6 +35,7 @@ type SignUpFormValues = {
 export const AuthForm = ({ mode }: AuthFormProps) => {
   const isSignup = mode === "signup";
   const { state, submit } = useAuthForm(mode);
+  const router = useRouter();
   const [formValues, setFormValues] = useState<SignUpFormValues>({
     email: "",
     password: "",
@@ -48,13 +50,17 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    let didSucceed = false;
 
     if (isSignup) {
-      await submit(formValues);
-      return;
+      didSucceed = await submit(formValues);
+    } else {
+      didSucceed = await submit({ email: formValues.email, password: formValues.password });
     }
 
-    await submit({ email: formValues.email, password: formValues.password });
+    if (!isSignup && didSucceed) {
+      router.replace("/dashboard");
+    }
   };
 
   const togglePreference = (slug: string) => {
