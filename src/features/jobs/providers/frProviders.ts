@@ -11,6 +11,69 @@ import {
 
 type RecordValue = Record<string, unknown>;
 
+const REMOTIVE_DEFAULT_ENDPOINT = "https://remotive.com/api/remote-jobs";
+
+const REMOTIVE_CATEGORY_RULES = [
+  { slug: "engineering", keywords: ["engineer", "software", "developer", "data", "tech", "devops"] },
+  { slug: "product", keywords: ["product", "designer", "ux", "ui"] },
+  { slug: "marketing", keywords: ["marketing", "growth", "brand", "sales", "communication"] },
+  { slug: "operations", keywords: ["ops", "operation", "customer", "support", "success", "finance", "people"] },
+] as const;
+
+const inferRemotiveCategory = (value?: string): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+  const normalizedCategory = value.toLowerCase();
+  const matchingRule = REMOTIVE_CATEGORY_RULES.find(({ keywords }) =>
+    keywords.some((keyword) => normalizedCategory.includes(keyword))
+  );
+  return matchingRule?.slug;
+};
+
+const parseRemotiveSalary = (
+  value: unknown
+): { salaryMin?: number; salaryMax?: number } => {
+  if (typeof value !== "string") {
+    return {};
+  }
+
+  const matches = value.match(/(\d+(?:[.,]\d+)?)(\s*[kK])?/g);
+
+  if (!matches || matches.length === 0) {
+    return {};
+  }
+
+  const amounts = matches.slice(0, 2).map((match) => {
+    const numericMatch = match.match(/(\d+(?:[.,]\d+)?)/);
+    if (!numericMatch) {
+      return null;
+    }
+    const numericValue = Number(numericMatch[1].replace(",", "."));
+    if (!Number.isFinite(numericValue)) {
+      return null;
+    }
+    const hasThousands = match.toLowerCase().includes("k");
+    return Math.round(numericValue * (hasThousands ? 1000 : 1));
+  });
+
+  const sanitizedAmounts = amounts.filter(
+    (amount): amount is number => amount !== null
+  );
+
+  if (sanitizedAmounts.length === 0) {
+    return {};
+  }
+
+  const salaryMin = sanitizedAmounts[0];
+  const salaryMax =
+    sanitizedAmounts.length > 1
+      ? Math.max(salaryMin, sanitizedAmounts[1])
+      : salaryMin;
+
+  return { salaryMin, salaryMax };
+};
+
 const readValue = (record: RecordValue, key: string): unknown => {
   if (!key.includes(".")) {
     return record[key];
@@ -349,6 +412,43 @@ const frJobProviders: JobProvider[] = [
         salaryMaxKeys: ["salaryMax", "maxSalary"],
         publishedAtKeys: ["publishedAt"],
       }),
+  }),
+  createJsonProvider({
+    id: "remotive",
+    label: "Remotive",
+    endpoint: REMOTIVE_DEFAULT_ENDPOINT,
+    defaultCategory: "operations",
+    itemsPath: ["jobs"],
+    maxBatchSize: 20,
+    query: { limit: 20 },
+    mapItem: (record) => {
+      const job = buildProviderJob(record, {
+        externalIdKeys: ["id"],
+        titleKeys: ["title"],
+        companyKeys: ["company_name"],
+        locationKeys: ["candidate_required_location"],
+        descriptionKeys: ["description"],
+        categoryKeys: ["category"],
+        tagKeys: ["tags"],
+        publishedAtKeys: ["publication_date"],
+      });
+
+      if (!job) {
+        return null;
+      }
+
+      const normalizedCategory = inferRemotiveCategory(job.category);
+      const salaryRange = parseRemotiveSalary(record.salary);
+
+      return {
+        ...job,
+        remote: true,
+        location: job.location ?? "Remote",
+        category: normalizedCategory ?? job.category ?? undefined,
+        salaryMin: salaryRange.salaryMin ?? job.salaryMin ?? null,
+        salaryMax: salaryRange.salaryMax ?? job.salaryMax ?? null,
+      };
+    },
   }),
 ];
 
