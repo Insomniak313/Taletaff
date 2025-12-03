@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { Hero } from "@/components/sections/Hero";
+import { IllustratedPitch } from "@/components/sections/IllustratedPitch";
 import { InsightList } from "@/components/sections/InsightList";
 import { SuccessStories } from "@/components/sections/SuccessStories";
 import { InputField } from "@/components/ui/InputField";
@@ -102,6 +103,17 @@ describe("UI components", () => {
   it("affiche les témoignages", () => {
     render(<SuccessStories />);
     expect(screen.getByText(/Head of Product/i)).toBeInTheDocument();
+  });
+
+  it("met en scène l'illustrated pitch", () => {
+    render(<IllustratedPitch />);
+    expect(screen.getByText(/Des rituels visuels/i)).toBeInTheDocument();
+    expect(screen.getByText("Coaching onboarding")).toBeInTheDocument();
+    expect(screen.getByText("Playbooks secteur")).toBeInTheDocument();
+    expect(screen.getByText("Suivi mesure")).toBeInTheDocument();
+    expect(screen.getByText(/illustrations Popsy/i)).toBeInTheDocument();
+    const highlightItems = screen.getAllByRole("listitem");
+    expect(highlightItems.length).toBeGreaterThanOrEqual(3);
   });
 
   it("affiche les états d'un InputField", () => {
