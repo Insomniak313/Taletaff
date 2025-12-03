@@ -1,5 +1,11 @@
 # Taletaff
 
+![CI](https://img.shields.io/badge/CI-GitHub%20Actions-0A0)
+![Tests](https://img.shields.io/badge/tests-Vitest%20100%25-success)
+![Coverage](https://img.shields.io/badge/couverture-100%25-brightgreen)
+![Node](https://img.shields.io/badge/node-20.x-43853d)
+![Status](https://img.shields.io/badge/deployment-Vercel-black)
+
 Plateforme Next.js 16 (App Router) hébergée sur Vercel qui aligne Supabase, Tailwind CSS et un orchestrateur de scrapers pour mettre en avant les meilleures offres tech, produit, marketing et operations. L'expérience est pensée mobile-first, typée de bout en bout et optimisée pour Core Web Vitals.
 
 ## Sommaire
@@ -107,5 +113,18 @@ supabase/migrations/    # Schéma Postgres versionné (jobs, runs, config)
 - `docs/development.md` : setup local, outils, debug et données seed.
 - `docs/operations.md` : déploiement Vercel, secrets, scheduler & monitoring.
 - `docs/quality.md` : stratégie de tests, obligations perf/accessibilité, checklist PR.
+- `docs/contributing.md` : guide contribution (workflow git, normes, checklist PR).
+
+## Comment contribuer
+1. Créez une branche descriptive (`feature/job-card-skeleton`).
+2. Implémentez la fonctionnalité en respectant les conventions (exports nommés, composants < 100 lignes, interfaces TS).
+3. Ajoutez/actualisez les tests pertinents (`npm run test`) et exécutez `npm run lint && npm run typecheck`.
+4. Mettez à jour la documentation si le comportement évolue (`docs/` ou ce README).
+5. Ouvrez une Pull Request détaillant :
+   - le besoin business
+   - les impacts techniques (routes, migrations, env vars)
+   - la validation (captures, tests, métriques perf).
+
+Voir `docs/contributing.md` pour les exemples de messages de commit, la stratégie de branchement et la checklist complète PR.
 
 > Besoin d'un panorama plus approfondi ? Consultez le dossier `docs/` pour les guides détaillés, schémas d'architecture et checklists opérationnelles.

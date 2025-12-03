@@ -13,6 +13,7 @@ Ce dossier rassemble les guides opérationnels et techniques nécessaires pour m
 - [Développement](./development.md) · Setup local, variables d'environnement, données de tests, tips de debug.
 - [Opérations](./operations.md) · Déploiement Vercel, secrets, CI/CD, scheduler et surveillance.
 - [Qualité](./quality.md) · Stratégie de tests, normes de code, budgets de performances et checklist de revue.
+- [Contribution](./contributing.md) · Workflow git, conventions de code, checklist avant PR et attentes de revue.
 
 ## Conventions de lecture
 - Les chemins sont relatifs à la racine du repo (ex : `src/features/jobs/scheduler/jobScheduler.ts`).
