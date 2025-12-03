@@ -31,7 +31,8 @@ describe("UI components", () => {
   it("affiche le header et les CTA", () => {
     render(<AppHeader />);
     expect(screen.getByText("Taletaff")).toBeInTheDocument();
-    expect(screen.getByText("Explorer les offres")).toBeInTheDocument();
+    expect(screen.getByText("Se connecter")).toBeInTheDocument();
+    expect(screen.getByText("Créer un compte")).toBeInTheDocument();
   });
 
   it("affiche le hero et les insights", () => {

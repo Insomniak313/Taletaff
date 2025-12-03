@@ -13,17 +13,23 @@ export const Hero = () => (
     </p>
     <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
       <Link
-        href="/jobs"
+        href="/login"
         className="rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-500"
       >
-        Parcourir les offres
+        Me connecter
       </Link>
       <Link
         href="/signup"
         className="rounded-full border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 hover:border-slate-300"
       >
-        Déposer mon profil
+        Créer mon compte
       </Link>
     </div>
+    <p className="mt-4 text-sm text-slate-600">
+      Juste curieux ?{" "}
+      <Link href="/jobs" className="font-semibold text-brand-600">
+        Parcourir les offres
+      </Link>
+    </p>
   </section>
 );
