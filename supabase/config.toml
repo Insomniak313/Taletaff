@@ -1,25 +1,4 @@
 project_id = "taletaff"
-org_id = "local"
-
-derived = false
-
-[api]
-  hostname = "localhost"
-  port = 54321
-  sandbox_port = 54322
 
 [db]
-  port = 54322
   major_version = 15
-
-[studio]
-  port = 54323
-
-[inbucket]
-  port = 54324
-
-[storage]
-  port = 54325
-
-[edge_runtime]
-  port = 54326
