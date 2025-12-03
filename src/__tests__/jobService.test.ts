@@ -96,4 +96,25 @@ describe("jobService", () => {
     const jobs = await jobService.searchJobs();
     expect(jobs).toEqual([]);
   });
+
+  it("mappe les champs optionnels liés à la source", async () => {
+    const fetchedAt = new Date().toISOString();
+    mockData = {
+      data: [
+        {
+          id: "3",
+          source: "apec",
+          external_id: "ext-123",
+          fetched_at: fetchedAt,
+        },
+      ],
+      error: null,
+    };
+    const jobs = await jobService.searchJobs();
+    expect(jobs[0]).toMatchObject({
+      source: "apec",
+      externalId: "ext-123",
+      fetchedAt,
+    });
+  });
 });

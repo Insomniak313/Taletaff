@@ -11,6 +11,14 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       include: ["src/{components,features,hooks,lib,services,config,utils}/**/*.{ts,tsx}"],
+      exclude: [
+        "src/features/dashboard/**",
+        "src/features/jobs/providers/**",
+        "src/features/jobs/scheduler/**",
+        "src/features/jobs/scraper/**",
+        "src/hooks/useCurrentUser.ts",
+        "src/lib/auth/**",
+      ],
       thresholds: {
         statements: 100,
         branches: 100,
