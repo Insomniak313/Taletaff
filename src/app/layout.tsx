@@ -34,9 +34,9 @@ export const metadata: Metadata = {
 };
 
 const LayoutShell = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex min-h-screen flex-col bg-slate-50">
+  <div className="flex min-h-screen flex-col px-4 pb-8 pt-4 sm:px-6 lg:px-8">
     <AppHeader />
-    <main className="flex-1 bg-slate-50">
+    <main className="flex-1">
       <Suspense fallback={<p className="p-6 text-center text-sm">Chargement…</p>}>
         {children}
       </Suspense>
@@ -50,8 +50,10 @@ const RootLayout = ({
 }: {
   children: React.ReactNode;
 }) => (
-  <html lang="fr" className="bg-slate-50">
-    <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+  <html lang="fr" className="bg-[var(--background)]">
+    <body
+      className={`${geistSans.variable} ${geistMono.variable} bg-[var(--background)] text-[var(--foreground)] antialiased`}
+    >
       <LayoutShell>{children}</LayoutShell>
     </body>
   </html>
