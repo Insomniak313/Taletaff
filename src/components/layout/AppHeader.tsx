@@ -24,12 +24,21 @@ export const AppHeader = () => (
           </Link>
         ))}
       </nav>
-      <Link
-        href="/jobs"
-        className="rounded-full bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-500"
-      >
-        Explorer les offres
-      </Link>
+      <div className="flex items-center gap-3">
+        <Link
+          href="/login"
+          className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          aria-label="Accéder à l'espace membre"
+        >
+          Se connecter
+        </Link>
+        <Link
+          href="/signup"
+          className="rounded-full bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-500"
+        >
+          Créer un compte
+        </Link>
+      </div>
     </div>
   </header>
 );
