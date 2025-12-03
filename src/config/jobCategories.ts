@@ -89,5 +89,4 @@ export const jobCategoryMap = jobCategories.reduce<Record<string, JobCategory>>(
   {}
 );
 
-export const defaultJobCategory =
-  jobCategories.find((category) => category.slug === "restauration") ?? jobCategories[0];
+export const defaultJobCategory = jobCategories[0];
