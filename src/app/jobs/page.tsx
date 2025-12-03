@@ -1,9 +1,36 @@
 import type { Metadata } from "next";
+import { absoluteUrl, siteMetadata } from "@/config/siteMetadata";
 import { JobSearchSection } from "@/features/jobs/components/JobSearchSection";
+
+const canonicalUrl = absoluteUrl("/jobs");
+const ogImageUrl = absoluteUrl(siteMetadata.defaultImage);
 
 export const metadata: Metadata = {
   title: "Offres d'emploi qualifiées · Taletaff",
   description: "Naviguez par catégorie, stack et localisation pour identifier l'offre parfaite.",
+  keywords: ["job board", "emplois qualifiés", "recherche emploi"],
+  alternates: { canonical: canonicalUrl },
+  openGraph: {
+    title: "Offres d'emploi qualifiées · Taletaff",
+    description: "Naviguez par catégorie, stack et localisation pour identifier l'offre parfaite.",
+    url: canonicalUrl,
+    siteName: siteMetadata.organization.name,
+    locale: siteMetadata.locale,
+    type: "website",
+    images: [
+      {
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
+        alt: "Offres d'emploi qualifiées · Taletaff",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: siteMetadata.twitterHandle,
+    images: [ogImageUrl],
+  },
 };
 
 const JobsPage = () => (
