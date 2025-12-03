@@ -39,8 +39,8 @@ jobs:
       - name: Apply Supabase migrations
         run: supabase db push --db-url "$SUPABASE_DB_URL"
         env:
-          SUPABASE_DB_URL: postgresql://postgres:postgres@localhost:54322/postgres
-        # Connexion explicite au service Postgres local de l'action pour éviter les timeouts réseau.
+          SUPABASE_DB_URL: postgresql://postgres:postgres@localhost:54322/postgres?sslmode=disable
+        # Connexion explicite au service Postgres local + désactivation TLS (service interne).
       - name: Lint
         run: npm run lint
       - name: Type Check
