@@ -1,0 +1,7 @@
+node_modules
+.next
+.git
+npm-debug.log
+dist
+docker-compose.override.yml
+coverage
