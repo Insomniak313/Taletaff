@@ -32,15 +32,17 @@ export interface SchedulerSummary {
   items: SchedulerSummaryItem[];
 }
 
-const fetchRunRows = async (client: JobsClient): Promise<Record<JobProviderId, ProviderRunRow>> => {
+type ProviderRunMap = Partial<Record<JobProviderId, ProviderRunRow>>;
+
+const fetchRunRows = async (client: JobsClient): Promise<ProviderRunMap> => {
   const { data, error } = await client.from(JOB_PROVIDER_RUNS_TABLE).select("*");
   if (error) {
     throw new Error(error.message);
   }
   if (!data) {
-    return {} as Record<JobProviderId, ProviderRunRow>;
+    return {};
   }
-  return data.reduce<Record<JobProviderId, ProviderRunRow>>((acc, row) => {
+  return data.reduce<ProviderRunMap>((acc, row) => {
     acc[row.provider as JobProviderId] = row as ProviderRunRow;
     return acc;
   }, {});
@@ -87,7 +89,7 @@ const upsertRunRow = async (
 
 interface DetermineDueProvidersArgs {
   providers: JobProvider[];
-  runs: Record<JobProviderId, ProviderRunRow | undefined>;
+  runs: ProviderRunMap;
   jobCounts: Record<JobProviderId, number | undefined>;
   now: Date;
   refreshIntervalMs: number;

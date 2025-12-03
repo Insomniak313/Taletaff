@@ -66,6 +66,18 @@ export const optionalEnv = (key: string): string | undefined => {
 };
 
 export const createJsonProvider = (definition: JsonProviderDefinition): JobProvider => {
+  const normalizeHeaders = (
+    value?: Record<string, string | undefined> | undefined
+  ): Record<string, string> | undefined => {
+    if (!value) {
+      return undefined;
+    }
+    const entries = Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string"
+    );
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+  };
+
   return {
     id: definition.id,
     label: definition.label,
@@ -91,7 +103,7 @@ export const createJsonProvider = (definition: JsonProviderDefinition): JobProvi
       });
 
       const method = definition.method ?? "GET";
-      const headers = definition.headers ? definition.headers() : undefined;
+      const headers = normalizeHeaders(definition.headers ? definition.headers() : undefined);
       const bodyPayload =
         typeof definition.body === "function" ? definition.body(context) : definition.body;
 
