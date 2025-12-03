@@ -1,1 +1,43 @@
-<html><head><title>404 - File Not Found</title><link href='//fonts.bunny.net/css?family=Rubik:300,400,500' rel='stylesheet' type='text/css'><style>html, body { width: 100%; margin: 0; padding: 0; text-align: center; font-family: 'Rubik'; background-repeat: no-repeat; background-position: bottom center; background-size: cover; color: white; height: 100%; background-color: #313335; } h1 {margin-bottom: 0px;font-weight: bold;font-size: 140px;font-weight: 500;padding-top: 130px;margin-bottom: -35px;}h2 {font-size: 45px;color: white; font-weight: 200;}</style></head><body><div id='content'><h1 style='margin-bottom: -35px;'>404</h1><h2>File Not Found</h2></div></body></html>
+<svg width="480" height="480" viewBox="0 0 480 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="480" height="480" rx="64" fill="url(#bg)" />
+  <g filter="url(#glow)">
+    <path
+      d="M72 336c38-52 80-78 128-56s84-4 116-64 68-86 92-72 24 66 0 104-53 60-88 72-81 12-108 28-58 34-100-12-40 12-40 0z"
+      fill="url(#gradient)"
+      opacity=".9"
+    />
+  </g>
+  <g stroke="#0B4A46" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M120 340v-84" />
+    <path d="M156 340v-128" />
+    <path d="M192 340v-64" />
+    <path d="M228 340v-168" />
+    <path d="M264 340v-108" />
+    <path d="M300 340v-212" />
+    <path d="M336 340v-144" />
+    <path d="M372 340v-256" />
+  </g>
+  <circle cx="372" cy="84" r="24" fill="#FEECE2" stroke="#EA6D2A" stroke-width="6" />
+  <path
+    d="M144 388c32-40 68-40 100-10s72 26 108 2"
+    stroke="#0A8F87"
+    stroke-width="8"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="480" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFF" />
+      <stop offset="1" stop-color="#E5F6FF" />
+    </linearGradient>
+    <linearGradient id="gradient" x1="96" y1="132" x2="384" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B3E5FC" />
+      <stop offset=".45" stop-color="#9CE6D8" />
+      <stop offset="1" stop-color="#FFD1A6" />
+    </linearGradient>
+    <filter id="glow" x="32" y="80" width="416" height="320" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="20" result="blur" />
+      <feBlend in="SourceGraphic" in2="blur" mode="normal" />
+    </filter>
+  </defs>
+</svg>

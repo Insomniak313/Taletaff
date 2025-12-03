@@ -1,1 +1,55 @@
-<html><head><title>404 - File Not Found</title><link href='//fonts.bunny.net/css?family=Rubik:300,400,500' rel='stylesheet' type='text/css'><style>html, body { width: 100%; margin: 0; padding: 0; text-align: center; font-family: 'Rubik'; background-repeat: no-repeat; background-position: bottom center; background-size: cover; color: white; height: 100%; background-color: #313335; } h1 {margin-bottom: 0px;font-weight: bold;font-size: 140px;font-weight: 500;padding-top: 130px;margin-bottom: -35px;}h2 {font-size: 45px;color: white; font-weight: 200;}</style></head><body><div id='content'><h1 style='margin-bottom: -35px;'>404</h1><h2>File Not Found</h2></div></body></html>
+<svg width="520" height="520" viewBox="0 0 520 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="520" height="520" rx="72" fill="url(#team-bg)" />
+  <g opacity=".8">
+    <circle cx="176" cy="208" r="72" fill="#FFE9D6" />
+    <circle cx="344" cy="216" r="88" fill="#DEF4FF" />
+    <circle cx="260" cy="320" r="108" fill="#E8F7F2" />
+  </g>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path
+      d="M150 312c12-34 58-52 86-36s72 8 88-24 18-78 74-80 70 64 42 108-66 62-118 54-90 0-110 16-62 12-62-38z"
+      fill="#FFFFFF"
+      stroke="#D0E3FF"
+      stroke-width="6"
+    />
+    <path
+      d="M132 356c10-30 48-46 68-32s56 8 70-20 14-66 60-68 58 54 34 90-52 52-92 46-70 0-86 14-48 10-54-30z"
+      fill="#FDF7EE"
+      stroke="#F2D1B2"
+      stroke-width="6"
+    />
+  </g>
+  <g fill="#0D706B">
+    <circle cx="176" cy="206" r="12" />
+    <circle cx="220" cy="214" r="12" />
+    <path d="M184 244c12 8 28 8 40 0" stroke="#0D706B" stroke-width="6" stroke-linecap="round" />
+    <circle cx="328" cy="214" r="12" />
+    <circle cx="372" cy="206" r="12" />
+    <path d="M332 246c14 10 34 10 48 0" stroke="#0D706B" stroke-width="6" stroke-linecap="round" />
+  </g>
+  <g>
+    <path
+      d="M220 392c0-34 24-52 52-52s52 18 52 52v20H220z"
+      fill="#0F8F87"
+      opacity=".9"
+    />
+    <path
+      d="M196 412c0-30 20-46 44-46s44 16 44 46v12H196z"
+      fill="#1BA99F"
+      opacity=".7"
+    />
+    <path
+      d="M292 412c0-30 20-46 44-46s44 16 44 46v12H292z"
+      fill="#32B7AC"
+      opacity=".6"
+    />
+    <circle cx="272" cy="322" r="48" fill="#FFF4E8" stroke="#F1C89C" stroke-width="6" />
+    <circle cx="308" cy="308" r="30" fill="#E5F4FF" stroke="#B5D9FF" stroke-width="4" opacity=".8" />
+  </g>
+  <defs>
+    <linearGradient id="team-bg" x1="0" y1="0" x2="520" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9FAFF" />
+      <stop offset="1" stop-color="#E3FCF5" />
+    </linearGradient>
+  </defs>
+</svg>
