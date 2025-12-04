@@ -86,6 +86,13 @@ describe("jobService", () => {
     expect(queryBuilder.or).toHaveBeenCalled();
   });
 
+  it("applique un filtre provider", async () => {
+    await jobService.searchJobs({
+      provider: "apec",
+    });
+    expect(queryBuilder.eq).toHaveBeenCalledWith("source", "apec");
+  });
+
   it("applique une limite personnalisée", async () => {
     await jobService.searchJobs({ limit: 5 });
     expect(queryBuilder.limit).toHaveBeenCalledWith(5);

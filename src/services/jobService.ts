@@ -36,6 +36,10 @@ export const jobService = {
       query = query.eq("category", filters.category);
     }
 
+    if (filters.provider) {
+      query = query.eq("source", filters.provider);
+    }
+
     if (filters.location) {
       query = query.ilike("location", `%${filters.location}%`);
     }

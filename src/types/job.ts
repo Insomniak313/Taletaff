@@ -1,3 +1,5 @@
+import type { JobProviderId } from "@/features/jobs/providers/types";
+
 export interface JobCategory {
   slug: string;
   title: string;
@@ -22,13 +24,14 @@ export interface JobRecord {
   salaryMax: number;
   tags: string[];
   createdAt: string;
-  source?: string;
+  source?: JobProviderId;
   externalId?: string | null;
   fetchedAt?: string | null;
 }
 
 export interface JobFilters {
   category?: string;
+  provider?: JobProviderId;
   query?: string;
   limit?: number;
   location?: string;

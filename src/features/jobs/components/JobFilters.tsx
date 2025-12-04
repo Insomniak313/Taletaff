@@ -1,5 +1,6 @@
 import { formatCurrencyRange } from "@/utils/format";
 import type { JobCategory, JobSearchSummary } from "@/types/job";
+import type { JobProviderFilterOption } from "@/config/jobProviders";
 
 const SALARY_PRESETS = [40000, 60000, 80000, 100000];
 const FALLBACK_LOCATIONS = [
@@ -11,7 +12,10 @@ const FALLBACK_LOCATIONS = [
 interface JobFiltersProps {
   categories: JobCategory[];
   activeCategory?: string;
-  onCategoryChange: (slug: string) => void;
+  onCategoryChange: (slug?: string) => void;
+  providers: JobProviderFilterOption[];
+  activeProvider?: JobProviderFilterOption["id"];
+  onProviderChange: (value?: JobProviderFilterOption["id"]) => void;
   query: string;
   onQueryChange: (value: string) => void;
   summary: JobSearchSummary;
@@ -31,6 +35,9 @@ export const JobFilters = ({
   categories,
   activeCategory,
   onCategoryChange,
+  providers,
+  activeProvider,
+  onProviderChange,
   query,
   onQueryChange,
   summary,
@@ -50,7 +57,24 @@ export const JobFilters = ({
     Boolean(location) ||
     remoteOnly ||
     salaryFloor !== null ||
+    Boolean(activeProvider) ||
     selectedTags.length > 0;
+
+  const handleCategoryClick = (slug: string) => {
+    if (slug === activeCategory) {
+      onCategoryChange(undefined);
+      return;
+    }
+    onCategoryChange(slug);
+  };
+
+  const handleProviderChange = (value: string) => {
+    if (!value) {
+      onProviderChange(undefined);
+      return;
+    }
+    onProviderChange(value as JobProviderFilterOption["id"]);
+  };
 
   const locationOptions = (() => {
     const base = summary.topLocations.length ? summary.topLocations : FALLBACK_LOCATIONS;
@@ -79,8 +103,8 @@ export const JobFilters = ({
 
   return (
     <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:gap-6">
-        <div className="flex-1">
+      <div className="flex flex-col gap-4 md:grid md:grid-cols-3 md:items-end md:gap-6">
+        <div className="md:col-span-2">
           <label
             htmlFor="job-search-input"
             className="text-xs font-semibold uppercase tracking-wide text-slate-500"
@@ -112,7 +136,7 @@ export const JobFilters = ({
               : `${summary.count} opportunité(s) triées par pertinence`}
           </p>
         </div>
-        <div className="md:w-64">
+        <div>
           <label
             htmlFor="job-location-select"
             className="text-xs font-semibold uppercase tracking-wide text-slate-500"
@@ -129,6 +153,27 @@ export const JobFilters = ({
             {locationOptions.map((option) => (
               <option key={option.label} value={option.label}>
                 {option.label} {option.count ? `(${option.count})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="job-provider-select"
+            className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+          >
+            Source partenaire
+          </label>
+          <select
+            id="job-provider-select"
+            value={activeProvider ?? ""}
+            onChange={(event) => handleProviderChange(event.target.value)}
+            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:border-brand-500 focus:outline-none"
+          >
+            <option value="">Tous les partenaires</option>
+            {providers.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.label}
               </option>
             ))}
           </select>
@@ -177,13 +222,24 @@ export const JobFilters = ({
       </div>
 
       <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onCategoryChange(undefined)}
+          className={`rounded-full border px-4 py-2 text-sm transition ${
+            !activeCategory
+              ? "border-brand-500 bg-brand-600 text-white shadow-sm"
+              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+          }`}
+        >
+          Toutes les offres
+        </button>
         {categories.map((category) => {
           const isActive = category.slug === activeCategory;
           return (
             <button
               type="button"
               key={category.slug}
-              onClick={() => onCategoryChange(category.slug)}
+              onClick={() => handleCategoryClick(category.slug)}
               className={`rounded-full border px-4 py-2 text-sm transition ${
                 isActive
                   ? "border-brand-500 bg-brand-600 text-white shadow-sm"

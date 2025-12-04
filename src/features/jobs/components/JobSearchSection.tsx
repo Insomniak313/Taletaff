@@ -2,7 +2,8 @@
 
 import { JobFilters } from "@/features/jobs/components/JobFilters";
 import { JobList } from "@/features/jobs/components/JobList";
-import { jobCategories, defaultJobCategory } from "@/config/jobCategories";
+import { jobCategories } from "@/config/jobCategories";
+import { jobProviderFilters } from "@/config/jobProviders";
 import { useJobSearch } from "@/hooks/useJobSearch";
 
 interface JobSearchSectionProps {
@@ -10,10 +11,11 @@ interface JobSearchSectionProps {
 }
 
 export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}) => {
-  const fallbackCategory = initialCategory ?? defaultJobCategory.slug;
   const {
     category,
     setCategory,
+    provider,
+    setProvider,
     query,
     setQuery,
     jobs,
@@ -29,7 +31,7 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
     selectedTags,
     toggleTag,
     resetFilters,
-  } = useJobSearch({ initialCategory: fallbackCategory });
+  } = useJobSearch({ initialCategory });
 
   return (
     <section className="space-y-6">
@@ -37,6 +39,9 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
         categories={jobCategories}
         activeCategory={category}
         onCategoryChange={setCategory}
+        providers={jobProviderFilters}
+        activeProvider={provider}
+        onProviderChange={setProvider}
         query={query}
         onQueryChange={setQuery}
         summary={summary}

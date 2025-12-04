@@ -13,6 +13,7 @@ import { JobCard } from "@/features/jobs/components/JobCard";
 import { JobFilters } from "@/features/jobs/components/JobFilters";
 import { JobList } from "@/features/jobs/components/JobList";
 import { jobCategories } from "@/config/jobCategories";
+import type { JobProviderFilterOption } from "@/config/jobProviders";
 
 const sampleJob = {
   id: "1",
@@ -27,6 +28,11 @@ const sampleJob = {
   tags: ["Figma"],
   createdAt: new Date().toISOString(),
 };
+
+const providerOptions: JobProviderFilterOption[] = [
+  { id: "apec", label: "APEC" },
+  { id: "indeed-fr", label: "Indeed France" },
+];
 
 describe("UI components", () => {
   it("affiche le header et les CTA", () => {
@@ -57,11 +63,22 @@ describe("UI components", () => {
   });
 
   it("affiche un job card complet", () => {
-    render(<JobCard job={sampleJob} />);
+    const { container, rerender } = render(<JobCard job={sampleJob} />);
     expect(screen.getByText("Lead Designer")).toBeInTheDocument();
     expect(screen.getByText(/Remote friendly/i)).toBeInTheDocument();
-    render(<JobCard job={{ ...sampleJob, id: "2", remote: false }} />);
+    rerender(<JobCard job={{ ...sampleJob, id: "2", remote: false }} />);
     expect(screen.getByText(/Sur site/)).toBeInTheDocument();
+    rerender(
+      <JobCard
+        job={{
+          ...sampleJob,
+          id: "3",
+          description: "<strong>Important</strong><script>alert('boom')</script>",
+        }}
+      />
+    );
+    expect(container.querySelector("strong")).not.toBeNull();
+    expect(container.querySelector("script")).toBeNull();
   });
 
   it("affiche la liste des jobs", () => {
@@ -77,6 +94,7 @@ describe("UI components", () => {
     const onSalaryFloorChange = vi.fn();
     const onTagToggle = vi.fn();
     const onResetFilters = vi.fn();
+    const onProviderChange = vi.fn();
     const summary = {
       count: 2,
       remoteShare: 0.5,
@@ -89,6 +107,9 @@ describe("UI components", () => {
         categories={jobCategories}
         activeCategory={jobCategories[0].slug}
         onCategoryChange={onCategoryChange}
+        providers={providerOptions}
+        activeProvider={undefined}
+        onProviderChange={onProviderChange}
         query=""
         onQueryChange={onQueryChange}
         summary={summary}
@@ -112,6 +133,9 @@ describe("UI components", () => {
         categories={jobCategories}
         activeCategory={jobCategories[0].slug}
         onCategoryChange={onCategoryChange}
+        providers={providerOptions}
+        activeProvider={undefined}
+        onProviderChange={onProviderChange}
         query="staff"
         onQueryChange={onQueryChange}
         summary={summary}
@@ -138,16 +162,24 @@ describe("UI components", () => {
       target: { value: "60000" },
     });
     fireEvent.click(screen.getByText("TypeScript"));
+    fireEvent.change(screen.getByLabelText(/Source partenaire/i), {
+      target: { value: providerOptions[1].id },
+    });
+    fireEvent.click(screen.getByText(/Toutes les offres/i));
     expect(onCategoryChange).toHaveBeenCalled();
     expect(onLocationChange).toHaveBeenCalledWith("Paris");
     expect(onRemoteToggle).toHaveBeenCalled();
     expect(onSalaryFloorChange).toHaveBeenCalledWith(60000);
     expect(onTagToggle).toHaveBeenCalledWith("TypeScript");
+    expect(onProviderChange).toHaveBeenLastCalledWith(providerOptions[1].id);
     rerender(
       <JobFilters
         categories={jobCategories}
         activeCategory={jobCategories[0].slug}
         onCategoryChange={onCategoryChange}
+        providers={providerOptions}
+        activeProvider={providerOptions[1].id}
+        onProviderChange={onProviderChange}
         query="staff"
         onQueryChange={onQueryChange}
         summary={summary}
@@ -169,6 +201,9 @@ describe("UI components", () => {
         categories={jobCategories}
         activeCategory={jobCategories[0].slug}
         onCategoryChange={onCategoryChange}
+        providers={providerOptions}
+        activeProvider={undefined}
+        onProviderChange={onProviderChange}
         query=""
         onQueryChange={onQueryChange}
         summary={{ ...summary, count: 0 }}
@@ -195,6 +230,9 @@ describe("UI components", () => {
         categories={jobCategories}
         activeCategory={jobCategories[0].slug}
         onCategoryChange={noop}
+        providers={providerOptions}
+        activeProvider={providerOptions[0].id}
+        onProviderChange={noop}
         query="nantes"
         onQueryChange={noop}
         summary={{
