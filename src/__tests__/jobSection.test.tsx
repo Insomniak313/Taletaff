@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JobSearchSection } from "@/features/jobs/components/JobSearchSection";
 
@@ -12,11 +13,25 @@ const toggleTag = vi.fn();
 const resetFilters = vi.fn();
 const fetchJobs = vi.fn();
 
+const buildJob = (index: number) => ({
+  id: `${index}`,
+  title: `Rôle ${index}`,
+  company: "Taletaff",
+  location: "Paris",
+  category: "engineering",
+  description: "Description",
+  remote: true,
+  salaryMin: 40000,
+  salaryMax: 60000,
+  tags: ["TypeScript"],
+  createdAt: new Date().toISOString(),
+});
+
 const state = {
   category: "product",
   provider: undefined as string | undefined,
   query: "",
-  jobs: [],
+  jobs: [] as ReturnType<typeof buildJob>[],
   isLoading: false,
   error: null as string | null,
   summary: {
@@ -82,5 +97,19 @@ describe("JobSearchSection", () => {
     state.error = "Boom";
     render(<JobSearchSection />);
     expect(screen.getAllByText("Boom").length).toBeGreaterThan(0);
+  });
+
+  it("gère la pagination sans effets", async () => {
+    const user = userEvent.setup();
+    state.jobs = Array.from({ length: 8 }, (_, index) => buildJob(index + 1));
+    const { rerender } = render(<JobSearchSection />);
+
+    expect(screen.getByText(/Page 1 \/ 2/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Suivant/i }));
+    expect(screen.getByText(/Page 2 \/ 2/i)).toBeInTheDocument();
+
+    state.jobs = Array.from({ length: 3 }, (_, index) => buildJob(index + 1));
+    rerender(<JobSearchSection />);
+    expect(screen.queryByText(/Page 1 \/ 1/i)).not.toBeInTheDocument();
   });
 });

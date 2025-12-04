@@ -1,13 +1,33 @@
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
+
 import { Hero } from "@/components/sections/Hero";
 import { IllustratedPitch } from "@/components/sections/IllustratedPitch";
 import { InsightList } from "@/components/sections/InsightList";
 import { SuccessStoriesLoader } from "@/components/sections/SuccessStoriesLoader";
+import { ProjectModules } from "@/components/sections/ProjectModules";
 import { CategoryGrid } from "@/features/jobs/components/CategoryGrid";
 import { jobCategories } from "@/config/jobCategories";
+
+const DataPulse = dynamic(() => import("@/components/sections/DataPulse").then((mod) => mod.DataPulse));
+
+const AutomationPlayground = dynamic(
+  () => import("@/components/sections/AutomationPlayground").then((mod) => mod.AutomationPlayground)
+);
+
+const SectionPlaceholder = ({ title }: { title: string }) => (
+  <section className="rounded-[32px] border border-dashed border-white/60 bg-white/40 p-8">
+    <p className="text-sm text-ink-500">Chargement de {title}…</p>
+  </section>
+);
 
 const Home = () => (
   <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 py-12">
     <Hero />
+    <ProjectModules />
+    <Suspense fallback={<SectionPlaceholder title="Data Pulse" />}>
+      <DataPulse />
+    </Suspense>
     <InsightList />
     <IllustratedPitch />
     <section className="space-y-6 rounded-[32px] border border-white/70 bg-white/80 px-6 py-8 shadow-lg">
@@ -24,6 +44,9 @@ const Home = () => (
       </header>
       <CategoryGrid categories={jobCategories} />
     </section>
+    <Suspense fallback={<SectionPlaceholder title="Playground automatisation" />}>
+      <AutomationPlayground />
+    </Suspense>
     <SuccessStoriesLoader />
   </div>
 );

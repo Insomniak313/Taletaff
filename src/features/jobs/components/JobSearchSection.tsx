@@ -6,6 +6,12 @@ import { JobList } from "@/features/jobs/components/JobList";
 import { jobCategories } from "@/config/jobCategories";
 import { jobProviderFilters, type JobProviderFilterOption } from "@/config/jobProviders";
 import { useJobSearch } from "@/hooks/useJobSearch";
+import type { JobRecord } from "@/types/job";
+
+const PAGE_SIZE = 6;
+
+const computeJobsSignature = (jobs: ReadonlyArray<JobRecord>) =>
+  jobs.map((job) => job.id).join("|");
 
 interface JobSearchSectionProps {
   initialCategory?: string;
@@ -39,94 +45,31 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
     resetFilters,
   } = useJobSearch({ initialCategory });
 
-  const pageCount = Math.max(1, Math.ceil((jobs.length || 0) / pageSize) || 1);
+  const signature = useMemo(() => computeJobsSignature(jobs), [jobs]);
+  const [pageState, setPageState] = useState({ page: 1, signature });
 
-  useEffect(() => {
-    setPage((current) => Math.min(current, pageCount));
-  }, [pageCount]);
+  const pageCount = useMemo(() => Math.max(Math.ceil(jobs.length / PAGE_SIZE), 1), [jobs.length]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [jobs]);
+  const requestedPage = pageState.signature === signature ? pageState.page : 1;
+  const page = Math.min(Math.max(requestedPage, 1), pageCount);
 
   const paginatedJobs = useMemo(() => {
-    if (!jobs.length) {
-      return [];
-    }
-    const safePage = Math.min(page, pageCount);
-    const startIndex = (safePage - 1) * pageSize;
-    return jobs.slice(startIndex, startIndex + pageSize);
-  }, [jobs, page, pageCount, pageSize]);
+    const startIndex = (page - 1) * PAGE_SIZE;
+    return jobs.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [jobs, page]);
 
-  const handlePageChange = useCallback(
+  const updatePage = useCallback(
     (nextPage: number) => {
-      setPage(Math.max(1, Math.min(nextPage, pageCount)));
+      setPageState({
+        page: Math.min(Math.max(nextPage, 1), pageCount),
+        signature,
+      });
     },
-    [pageCount]
+    [pageCount, signature]
   );
 
-  const handlePageSizeChange = useCallback((nextSize: number) => {
-    setPageSize(nextSize);
-    setPage(1);
-  }, []);
-
-  const handleCategoryChange = useCallback(
-    (value?: string) => {
-      setPage(1);
-      setCategory(value);
-    },
-    [setCategory]
-  );
-
-  const handleProviderChange = useCallback(
-    (value?: JobProviderFilterOption["id"]) => {
-      setPage(1);
-      setProvider(value);
-    },
-    [setProvider]
-  );
-
-  const handleQueryChange = useCallback(
-    (value: string) => {
-      setPage(1);
-      setQuery(value);
-    },
-    [setQuery]
-  );
-
-  const handleLocationChange = useCallback(
-    (value: string) => {
-      setPage(1);
-      setLocation(value);
-    },
-    [setLocation]
-  );
-
-  const handleRemoteToggle = useCallback(() => {
-    setPage(1);
-    toggleRemoteFilter();
-  }, [toggleRemoteFilter]);
-
-  const handleSalaryFloorChange = useCallback(
-    (value: number | null) => {
-      setPage(1);
-      setSalaryFloor(value);
-    },
-    [setSalaryFloor]
-  );
-
-  const handleTagToggle = useCallback(
-    (tag: string) => {
-      setPage(1);
-      toggleTagFilter(tag);
-    },
-    [toggleTagFilter]
-  );
-
-  const handleResetFilters = useCallback(() => {
-    setPage(1);
-    resetFilters();
-  }, [resetFilters]);
+  const goToPrevious = useCallback(() => updatePage(page - 1), [page, updatePage]);
+  const goToNext = useCallback(() => updatePage(page + 1), [page, updatePage]);
 
   return (
     <section className="space-y-6">
@@ -157,13 +100,36 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />
-      {isLoading && (
-        <p className="text-sm text-slate-500">Chargement des offres…</p>
+      {isLoading && <p className="text-sm text-slate-500">Chargement des offres…</p>}
+      {error && !isLoading && <p className="text-sm text-red-500">{error}</p>}
+      {!isLoading && (
+        <>
+          <JobList jobs={paginatedJobs} />
+          {jobs.length > PAGE_SIZE && (
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-600">
+              <button
+                type="button"
+                onClick={goToPrevious}
+                disabled={page === 1}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 transition disabled:opacity-40"
+              >
+                ← Précédent
+              </button>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+                Page {page} / {pageCount}
+              </p>
+              <button
+                type="button"
+                onClick={goToNext}
+                disabled={page === pageCount}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 transition disabled:opacity-40"
+              >
+                Suivant →
+              </button>
+            </div>
+          )}
+        </>
       )}
-      {error && !isLoading && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
-      {!isLoading && <JobList jobs={paginatedJobs} />}
     </section>
   );
 };

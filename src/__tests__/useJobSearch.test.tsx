@@ -36,7 +36,7 @@ describe("useJobSearch", () => {
   });
 
   it("récupère les offres et expose un résumé", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue({
+    vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({ jobs: mockJobs, summary: mockSummary }),
     } as Response);
