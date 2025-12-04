@@ -26,6 +26,11 @@ Workflow `./.github/workflows/ci.yml` runs on every push/PR:
 
 > Extend this workflow with Playwright, Lighthouse CI or bundle analysis to keep performance budgets honest.
 
+### Supabase migrations automation
+- Workflow `./.github/workflows/supabase-migrations.yml` se déclenche sur `main` (ou à la demande via `workflow_dispatch`) et applique automatiquement les migrations sur l'environnement Supabase géré.
+- Ajoutez le secret `SUPABASE_DB_URL` côté GitHub (`postgresql://<user>:<password>@<host>:<port>/<db>?sslmode=require`). Optionnel : définissez aussi `PGSSLMODE=require` si votre instance l'impose.
+- Les migrations sont poussées via `supabase db push --db-url "$SUPABASE_DB_URL"` pour garantir que chaque push validé synchronise la base distante sans action manuelle.
+
 ## Scheduler & scrapers
 - **Secrets**: `JOB_CRON_SECRET` must be defined in production. Requests lacking the header are rejected (401).
 - **Tracking tables**: `job_provider_runs` (status, timestamps, error) and `job_provider_config` (endpoints/headers) act as the single source of truth for scraper state.
