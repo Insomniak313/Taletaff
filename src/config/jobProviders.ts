@@ -34,3 +34,8 @@ export const jobProviderFilterMap = jobProviderFilters.reduce<
   acc[provider.id] = provider;
   return acc;
 }, {} as Record<JobProviderId, JobProviderFilterOption>);
+
+const jobProviderIds = jobProviderFilters.map((provider) => provider.id);
+
+export const isJobProviderId = (value: unknown): value is JobProviderId =>
+  typeof value === "string" && jobProviderIds.includes(value as JobProviderId);

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppFooter } from "@/components/layout/AppFooter";
@@ -73,12 +74,35 @@ describe("UI components", () => {
         job={{
           ...sampleJob,
           id: "3",
-          description: "<strong>Important</strong><script>alert('boom')</script>",
+          description:
+            "<ul><li>Mission &amp; vision</li><li>Impact &#169;</li></ul><script>alert('boom')</script><style>.x{}</style><p>Remote &#x26; hybrid<br/>Team</p><p></p>",
         }}
       />
     );
-    expect(screen.getByText(/Important/)).toBeInTheDocument();
+    expect(screen.getByText(/Mission & vision/)).toBeInTheDocument();
+    expect(screen.getByText(/Impact ©/)).toBeInTheDocument();
+    expect(screen.getByText(/Remote & hybrid/)).toBeInTheDocument();
     expect(screen.queryByText(/boom/)).toBeNull();
+    rerender(<JobCard job={{ ...sampleJob, id: "4", description: "" }} />);
+    expect(
+      screen.getByText(/Description en cours de rédaction/i)
+    ).toBeInTheDocument();
+    const longDescription = `<ul>${Array.from({ length: 10 }, (_, index) => `<li>Item ${index + 1}</li>`).join("")}</ul>`;
+    rerender(<JobCard job={{ ...sampleJob, id: "5", description: longDescription }} />);
+    expect(screen.getByText(/Item 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Item 8/)).toBeInTheDocument();
+    expect(screen.queryByText(/Item 9/)).toBeNull();
+    rerender(
+      <JobCard
+        job={{
+          ...sampleJob,
+          id: "6",
+          description: "Check &#xGG; &unknown;",
+        }}
+      />
+    );
+    const sanitizedLine = screen.getByText(/Check/).textContent ?? "";
+    expect(sanitizedLine).toMatch(/&#xGG;.*&unknown;/);
   });
 
   it("affiche la liste des jobs", () => {
@@ -102,123 +126,88 @@ describe("UI components", () => {
       topLocations: [{ label: "Paris", count: 1 }],
       topTags: [{ label: "TypeScript", count: 1 }],
     };
-    const { rerender } = render(
-      <JobFilters
-        categories={jobCategories}
-        activeCategory={jobCategories[0].slug}
-        onCategoryChange={onCategoryChange}
-        providers={providerOptions}
-        activeProvider={undefined}
-        onProviderChange={onProviderChange}
-        query=""
-        onQueryChange={onQueryChange}
-        summary={summary}
-        location=""
-        onLocationChange={onLocationChange}
-        remoteOnly={false}
-        onRemoteToggle={onRemoteToggle}
-        salaryFloor={null}
-        onSalaryFloorChange={onSalaryFloorChange}
-        selectedTags={[]}
-        onTagToggle={onTagToggle}
-        onResetFilters={onResetFilters}
-      />
-    );
+    type JobFiltersPropsType = ComponentProps<typeof JobFilters>;
+    let currentProps: JobFiltersPropsType = {
+      categories: jobCategories,
+      activeCategory: jobCategories[0].slug,
+      onCategoryChange,
+      providers: providerOptions,
+      activeProvider: undefined,
+      onProviderChange,
+      query: "",
+      onQueryChange,
+      summary,
+      location: "",
+      onLocationChange,
+      remoteOnly: false,
+      onRemoteToggle,
+      salaryFloor: null,
+      onSalaryFloorChange,
+      selectedTags: [],
+      onTagToggle,
+      onResetFilters,
+    };
+    const { rerender } = render(<JobFilters {...currentProps} />);
+    const rerenderWith = (overrides: Partial<JobFiltersPropsType> = {}) => {
+      currentProps = { ...currentProps, ...overrides };
+      rerender(<JobFilters {...currentProps} />);
+    };
     const searchInput = screen.getByPlaceholderText(/Poste, stack/i);
     fireEvent.change(searchInput, {
       target: { value: "staff" },
     });
-    rerender(
-      <JobFilters
-        categories={jobCategories}
-        activeCategory={jobCategories[0].slug}
-        onCategoryChange={onCategoryChange}
-        providers={providerOptions}
-        activeProvider={undefined}
-        onProviderChange={onProviderChange}
-        query="staff"
-        onQueryChange={onQueryChange}
-        summary={summary}
-        location=""
-        onLocationChange={onLocationChange}
-        remoteOnly={false}
-        onRemoteToggle={onRemoteToggle}
-        salaryFloor={null}
-        onSalaryFloorChange={onSalaryFloorChange}
-        selectedTags={[]}
-        onTagToggle={onTagToggle}
-        onResetFilters={onResetFilters}
-      />
-    );
+    rerenderWith({ query: "staff" });
     fireEvent.click(screen.getByText(/Effacer/));
     expect(onQueryChange).toHaveBeenLastCalledWith("");
+    fireEvent.click(screen.getByText(jobCategories[1].title));
+    rerenderWith({ activeCategory: jobCategories[1].slug });
     fireEvent.click(screen.getByText(jobCategories[1].title));
     fireEvent.change(screen.getByLabelText(/Localisation ciblée/i), {
       target: { value: "Paris" },
     });
+    rerenderWith({ location: "Paris" });
     const remoteFriendlyElements = screen.getAllByText(/Remote friendly/i);
     fireEvent.click(remoteFriendlyElements[0]);
+    rerenderWith({ remoteOnly: true });
     fireEvent.change(screen.getByLabelText(/Salaire minimum/i), {
       target: { value: "60000" },
     });
+    rerenderWith({ salaryFloor: 60000 });
     fireEvent.click(screen.getByText("TypeScript"));
+    rerenderWith({ selectedTags: ["TypeScript"] });
     fireEvent.change(screen.getByLabelText(/Source partenaire/i), {
       target: { value: providerOptions[1].id },
     });
+    expect(onProviderChange).toHaveBeenLastCalledWith(providerOptions[1].id);
+    rerenderWith({ activeProvider: providerOptions[1].id });
     fireEvent.click(screen.getByText(/Toutes les offres/i));
+    rerenderWith({ activeCategory: undefined });
+    fireEvent.change(screen.getByLabelText(/Source partenaire/i), {
+      target: { value: "" },
+    });
+    expect(onProviderChange).toHaveBeenLastCalledWith(undefined);
+    rerenderWith({ activeProvider: undefined });
     expect(onCategoryChange).toHaveBeenCalled();
+    expect(onCategoryChange).toHaveBeenLastCalledWith(undefined);
     expect(onLocationChange).toHaveBeenCalledWith("Paris");
     expect(onRemoteToggle).toHaveBeenCalled();
     expect(onSalaryFloorChange).toHaveBeenCalledWith(60000);
     expect(onTagToggle).toHaveBeenCalledWith("TypeScript");
-    expect(onProviderChange).toHaveBeenLastCalledWith(providerOptions[1].id);
-    rerender(
-      <JobFilters
-        categories={jobCategories}
-        activeCategory={jobCategories[0].slug}
-        onCategoryChange={onCategoryChange}
-        providers={providerOptions}
-        activeProvider={providerOptions[1].id}
-        onProviderChange={onProviderChange}
-        query="staff"
-        onQueryChange={onQueryChange}
-        summary={summary}
-        location="Paris"
-        onLocationChange={onLocationChange}
-        remoteOnly
-        onRemoteToggle={onRemoteToggle}
-        salaryFloor={60000}
-        onSalaryFloorChange={onSalaryFloorChange}
-        selectedTags={["TypeScript"]}
-        onTagToggle={onTagToggle}
-        onResetFilters={onResetFilters}
-      />
-    );
+    rerenderWith({
+      activeCategory: jobCategories[0].slug,
+      query: "staff",
+    });
     fireEvent.click(screen.getByText(/Réinitialiser/));
     expect(onResetFilters).toHaveBeenCalledTimes(1);
-    rerender(
-      <JobFilters
-        categories={jobCategories}
-        activeCategory={jobCategories[0].slug}
-        onCategoryChange={onCategoryChange}
-        providers={providerOptions}
-        activeProvider={undefined}
-        onProviderChange={onProviderChange}
-        query=""
-        onQueryChange={onQueryChange}
-        summary={{ ...summary, count: 0 }}
-        errorMessage="Erreur lors du chargement"
-        location=""
-        onLocationChange={onLocationChange}
-        remoteOnly={false}
-        onRemoteToggle={onRemoteToggle}
-        salaryFloor={null}
-        onSalaryFloorChange={onSalaryFloorChange}
-        selectedTags={[]}
-        onTagToggle={onTagToggle}
-        onResetFilters={onResetFilters}
-      />
-    );
+    rerenderWith({
+      query: "",
+      location: "",
+      remoteOnly: false,
+      salaryFloor: null,
+      selectedTags: [],
+      summary: { ...summary, count: 0 },
+      errorMessage: "Erreur lors du chargement",
+    });
     expect(screen.getByText(/Erreur lors du chargement/i)).toBeInTheDocument();
   });
 

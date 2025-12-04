@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { jobService } from "@/services/jobService";
+import { isJobProviderId } from "@/config/jobProviders";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category") ?? undefined;
-  const provider = searchParams.get("provider") ?? undefined;
+  const providerParam = searchParams.get("provider");
+  const provider = providerParam && isJobProviderId(providerParam) ? providerParam : undefined;
   const query = searchParams.get("query") ?? undefined;
   const location = searchParams.get("location") ?? undefined;
   const remoteOnly = searchParams.get("remote") === "true";

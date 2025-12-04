@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import DOMPurify from "isomorphic-dompurify";
 import { Tag } from "@/components/ui/Tag";
 import { formatCurrencyRange, formatRelativeDate } from "@/utils/format";
 import type { JobRecord } from "@/types/job";
@@ -8,27 +7,44 @@ interface JobCardProps {
   job: JobRecord;
 }
 
-const decodeHtmlEntities = (value: string): string => {
-  if (typeof window === "undefined") {
-    return value;
-  }
-  const textarea = document.createElement("textarea");
-  textarea.innerHTML = value;
-  return textarea.value;
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
 };
+
+const decodeHtmlEntities = (value: string): string =>
+  value.replace(/&(#x?[0-9a-f]+|\w+);/gi, (match, entity) => {
+    if (entity.startsWith("#x") || entity.startsWith("#X")) {
+      const codePoint = Number.parseInt(entity.slice(2), 16);
+      return String.fromCodePoint(codePoint);
+    }
+
+    if (entity.startsWith("#")) {
+      const codePoint = Number.parseInt(entity.slice(1), 10);
+      return String.fromCodePoint(codePoint);
+    }
+
+    const normalized = entity.toLowerCase();
+    return HTML_ENTITIES[normalized] ?? match;
+  });
+
+const stripUnsafeBlocks = (value: string): string =>
+  value
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
 
 const summarizeDescription = (value?: string): string => {
   if (!value) {
     return "";
   }
 
-  const sanitized = DOMPurify.sanitize(value, {
-    ALLOWED_TAGS: ["br", "p", "ul", "ol", "li"],
-    ALLOWED_ATTR: [],
-  });
-
-  const withLineBreaks = sanitized
-    .replace(/<li>/gi, "- ")
+  const safeValue = stripUnsafeBlocks(value);
+  const withLineBreaks = safeValue
+    .replace(/<li[^>]*>/gi, "- ")
     .replace(/<\/li>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n\n")
@@ -37,12 +53,20 @@ const summarizeDescription = (value?: string): string => {
   const stripped = withLineBreaks.replace(/<[^>]+>/g, " ");
   const decoded = decodeHtmlEntities(stripped);
 
-  return decoded
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 8)
-    .join("\n");
+  const lines: string[] = [];
+
+  for (const rawLine of decoded.split("\n")) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      continue;
+    }
+    lines.push(trimmed);
+    if (lines.length >= 8) {
+      break;
+    }
+  }
+
+  return lines.join("\n");
 };
 
 export const JobCard = ({ job }: JobCardProps) => {
