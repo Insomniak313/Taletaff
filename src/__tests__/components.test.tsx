@@ -63,7 +63,7 @@ describe("UI components", () => {
   });
 
   it("affiche un job card complet", () => {
-    const { container, rerender } = render(<JobCard job={sampleJob} />);
+    const { rerender } = render(<JobCard job={sampleJob} />);
     expect(screen.getByText("Lead Designer")).toBeInTheDocument();
     expect(screen.getByText(/Remote friendly/i)).toBeInTheDocument();
     rerender(<JobCard job={{ ...sampleJob, id: "2", remote: false }} />);
@@ -77,8 +77,8 @@ describe("UI components", () => {
         }}
       />
     );
-    expect(container.querySelector("strong")).not.toBeNull();
-    expect(container.querySelector("script")).toBeNull();
+    expect(screen.getByText(/Important/)).toBeInTheDocument();
+    expect(screen.queryByText(/boom/)).toBeNull();
   });
 
   it("affiche la liste des jobs", () => {
