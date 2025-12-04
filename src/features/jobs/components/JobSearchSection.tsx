@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { JobFilters } from "@/features/jobs/components/JobFilters";
 import { JobList } from "@/features/jobs/components/JobList";
 import { jobCategories } from "@/config/jobCategories";
-import { jobProviderFilters } from "@/config/jobProviders";
+import { jobProviderFilters, type JobProviderFilterOption } from "@/config/jobProviders";
 import { useJobSearch } from "@/hooks/useJobSearch";
 import type { JobRecord } from "@/types/job";
 
@@ -18,7 +17,12 @@ interface JobSearchSectionProps {
   initialCategory?: string;
 }
 
+const PAGE_SIZE_OPTIONS = [10, 20, 40];
+const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
+
 export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}) => {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const {
     category,
     setCategory,
@@ -33,11 +37,11 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
     location,
     setLocation,
     remoteOnly,
-    toggleRemoteOnly,
+    toggleRemoteOnly: toggleRemoteFilter,
     salaryFloor,
     setSalaryFloor,
     selectedTags,
-    toggleTag,
+    toggleTag: toggleTagFilter,
     resetFilters,
   } = useJobSearch({ initialCategory });
 
@@ -72,23 +76,29 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
       <JobFilters
         categories={jobCategories}
         activeCategory={category}
-        onCategoryChange={setCategory}
+        onCategoryChange={handleCategoryChange}
         providers={jobProviderFilters}
         activeProvider={provider}
-        onProviderChange={setProvider}
+        onProviderChange={handleProviderChange}
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={handleQueryChange}
         summary={summary}
         errorMessage={error}
         location={location}
-        onLocationChange={setLocation}
+        onLocationChange={handleLocationChange}
         remoteOnly={remoteOnly}
-        onRemoteToggle={toggleRemoteOnly}
+        onRemoteToggle={handleRemoteToggle}
         salaryFloor={salaryFloor}
-        onSalaryFloorChange={setSalaryFloor}
+        onSalaryFloorChange={handleSalaryFloorChange}
         selectedTags={selectedTags}
-        onTagToggle={toggleTag}
-        onResetFilters={resetFilters}
+        onTagToggle={handleTagToggle}
+        onResetFilters={handleResetFilters}
+        page={page}
+        pageCount={pageCount}
+        pageSize={pageSize}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
       />
       {isLoading && <p className="text-sm text-slate-500">Chargement des offres…</p>}
       {error && !isLoading && <p className="text-sm text-red-500">{error}</p>}

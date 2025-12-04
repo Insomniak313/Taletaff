@@ -83,7 +83,9 @@ describe("JobSearchSection", () => {
   it("rend les filtres et la liste vide", () => {
     render(<JobSearchSection />);
     expect(screen.getByPlaceholderText(/Poste, stack/i)).toBeInTheDocument();
-    expect(screen.getByText(/Aucune offre/i)).toBeInTheDocument();
+    expect(
+      screen.getByText("Aucune offre ne correspond à vos filtres pour le moment.")
+    ).toBeInTheDocument();
   });
 
   it("affiche les états de chargement et d'erreur", () => {
