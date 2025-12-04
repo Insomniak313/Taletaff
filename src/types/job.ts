@@ -31,8 +31,30 @@ export interface JobFilters {
   category?: string;
   query?: string;
   limit?: number;
+  location?: string;
+  remoteOnly?: boolean;
+  minSalary?: number;
+  maxSalary?: number;
+  tags?: string[];
+}
+
+export interface JobSearchSummary {
+  count: number;
+  remoteShare: number;
+  salaryRange: {
+    min: number;
+    max: number;
+  };
+  topLocations: Array<{ label: string; count: number }>;
+  topTags: Array<{ label: string; count: number }>;
+}
+
+export interface JobSearchResult {
+  jobs: JobRecord[];
+  summary: JobSearchSummary;
 }
 
 export interface JobSearchResponse {
   jobs: JobRecord[];
+  summary: JobSearchSummary;
 }

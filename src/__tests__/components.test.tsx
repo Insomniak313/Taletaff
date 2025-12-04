@@ -72,6 +72,18 @@ describe("UI components", () => {
   it("gère les interactions des filtres", () => {
     const onCategoryChange = vi.fn();
     const onQueryChange = vi.fn();
+    const onLocationChange = vi.fn();
+    const onRemoteToggle = vi.fn();
+    const onSalaryFloorChange = vi.fn();
+    const onTagToggle = vi.fn();
+    const onResetFilters = vi.fn();
+    const summary = {
+      count: 2,
+      remoteShare: 0.5,
+      salaryRange: { min: 50000, max: 70000 },
+      topLocations: [{ label: "Paris", count: 1 }],
+      topTags: [{ label: "TypeScript", count: 1 }],
+    };
     const { rerender } = render(
       <JobFilters
         categories={jobCategories}
@@ -79,14 +91,79 @@ describe("UI components", () => {
         onCategoryChange={onCategoryChange}
         query=""
         onQueryChange={onQueryChange}
-        summary={{ count: 2, hasError: false }}
+        summary={summary}
+        location=""
+        onLocationChange={onLocationChange}
+        remoteOnly={false}
+        onRemoteToggle={onRemoteToggle}
+        salaryFloor={null}
+        onSalaryFloorChange={onSalaryFloorChange}
+        selectedTags={[]}
+        onTagToggle={onTagToggle}
+        onResetFilters={onResetFilters}
       />
     );
-    fireEvent.change(screen.getByPlaceholderText(/Rechercher/), {
+    const searchInput = screen.getByPlaceholderText(/Poste, stack/i);
+    fireEvent.change(searchInput, {
       target: { value: "staff" },
     });
+    rerender(
+      <JobFilters
+        categories={jobCategories}
+        activeCategory={jobCategories[0].slug}
+        onCategoryChange={onCategoryChange}
+        query="staff"
+        onQueryChange={onQueryChange}
+        summary={summary}
+        location=""
+        onLocationChange={onLocationChange}
+        remoteOnly={false}
+        onRemoteToggle={onRemoteToggle}
+        salaryFloor={null}
+        onSalaryFloorChange={onSalaryFloorChange}
+        selectedTags={[]}
+        onTagToggle={onTagToggle}
+        onResetFilters={onResetFilters}
+      />
+    );
+    fireEvent.click(screen.getByText(/Effacer/));
+    expect(onQueryChange).toHaveBeenLastCalledWith("");
     fireEvent.click(screen.getByText(jobCategories[1].title));
+    fireEvent.change(screen.getByLabelText(/Localisation ciblée/i), {
+      target: { value: "Paris" },
+    });
+    const remoteFriendlyElements = screen.getAllByText(/Remote friendly/i);
+    fireEvent.click(remoteFriendlyElements[0]);
+    fireEvent.change(screen.getByLabelText(/Salaire minimum/i), {
+      target: { value: "60000" },
+    });
+    fireEvent.click(screen.getByText("TypeScript"));
     expect(onCategoryChange).toHaveBeenCalled();
+    expect(onLocationChange).toHaveBeenCalledWith("Paris");
+    expect(onRemoteToggle).toHaveBeenCalled();
+    expect(onSalaryFloorChange).toHaveBeenCalledWith(60000);
+    expect(onTagToggle).toHaveBeenCalledWith("TypeScript");
+    rerender(
+      <JobFilters
+        categories={jobCategories}
+        activeCategory={jobCategories[0].slug}
+        onCategoryChange={onCategoryChange}
+        query="staff"
+        onQueryChange={onQueryChange}
+        summary={summary}
+        location="Paris"
+        onLocationChange={onLocationChange}
+        remoteOnly
+        onRemoteToggle={onRemoteToggle}
+        salaryFloor={60000}
+        onSalaryFloorChange={onSalaryFloorChange}
+        selectedTags={["TypeScript"]}
+        onTagToggle={onTagToggle}
+        onResetFilters={onResetFilters}
+      />
+    );
+    fireEvent.click(screen.getByText(/Réinitialiser/));
+    expect(onResetFilters).toHaveBeenCalledTimes(1);
     rerender(
       <JobFilters
         categories={jobCategories}
@@ -94,10 +171,58 @@ describe("UI components", () => {
         onCategoryChange={onCategoryChange}
         query=""
         onQueryChange={onQueryChange}
-        summary={{ count: 0, hasError: true }}
+        summary={{ ...summary, count: 0 }}
+        errorMessage="Erreur lors du chargement"
+        location=""
+        onLocationChange={onLocationChange}
+        remoteOnly={false}
+        onRemoteToggle={onRemoteToggle}
+        salaryFloor={null}
+        onSalaryFloorChange={onSalaryFloorChange}
+        selectedTags={[]}
+        onTagToggle={onTagToggle}
+        onResetFilters={onResetFilters}
       />
     );
-    expect(screen.getByText(/Erreur/i)).toBeInTheDocument();
+    expect(screen.getByText(/Erreur lors du chargement/i)).toBeInTheDocument();
+  });
+
+  it("ajoute les localisations et tags manquants aux suggestions", () => {
+    const noop = vi.fn();
+    const onSalaryFloorChange = vi.fn();
+    render(
+      <JobFilters
+        categories={jobCategories}
+        activeCategory={jobCategories[0].slug}
+        onCategoryChange={noop}
+        query="nantes"
+        onQueryChange={noop}
+        summary={{
+          count: 0,
+          remoteShare: 0,
+          salaryRange: { min: 0, max: 0 },
+          topLocations: [],
+          topTags: [],
+        }}
+        errorMessage={null}
+        location="Nantes"
+        onLocationChange={noop}
+        remoteOnly={false}
+        onRemoteToggle={noop}
+        salaryFloor={null}
+        onSalaryFloorChange={onSalaryFloorChange}
+        selectedTags={["Go"]}
+        onTagToggle={noop}
+        onResetFilters={noop}
+      />
+    );
+    expect(screen.getByDisplayValue("Nantes")).toBeInTheDocument();
+    expect(screen.getByText("Go")).toBeInTheDocument();
+    expect(screen.getByText(/Effacer/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Salaire minimum/i), {
+      target: { value: "" },
+    });
+    expect(onSalaryFloorChange).toHaveBeenCalledWith(null);
   });
 
   it("affiche les témoignages", () => {

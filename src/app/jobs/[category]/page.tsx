@@ -66,7 +66,7 @@ const CategoryPage = ({ params }: Props) => {
         <h1 className="text-3xl font-semibold text-slate-900">{category.hero}</h1>
         <p className="text-base text-slate-600">{category.description}</p>
       </header>
-      <JobSearchSection />
+      <JobSearchSection initialCategory={category.slug} />
     </div>
   );
 };

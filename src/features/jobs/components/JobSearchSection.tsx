@@ -5,12 +5,34 @@ import { JobList } from "@/features/jobs/components/JobList";
 import { jobCategories, defaultJobCategory } from "@/config/jobCategories";
 import { useJobSearch } from "@/hooks/useJobSearch";
 
-export const JobSearchSection = () => {
-  const { category, setCategory, query, setQuery, jobs, isLoading, error, summary } =
-    useJobSearch({ initialCategory: defaultJobCategory.slug });
+interface JobSearchSectionProps {
+  initialCategory?: string;
+}
+
+export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}) => {
+  const fallbackCategory = initialCategory ?? defaultJobCategory.slug;
+  const {
+    category,
+    setCategory,
+    query,
+    setQuery,
+    jobs,
+    isLoading,
+    error,
+    summary,
+    location,
+    setLocation,
+    remoteOnly,
+    toggleRemoteOnly,
+    salaryFloor,
+    setSalaryFloor,
+    selectedTags,
+    toggleTag,
+    resetFilters,
+  } = useJobSearch({ initialCategory: fallbackCategory });
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <JobFilters
         categories={jobCategories}
         activeCategory={category}
@@ -18,6 +40,16 @@ export const JobSearchSection = () => {
         query={query}
         onQueryChange={setQuery}
         summary={summary}
+        errorMessage={error}
+        location={location}
+        onLocationChange={setLocation}
+        remoteOnly={remoteOnly}
+        onRemoteToggle={toggleRemoteOnly}
+        salaryFloor={salaryFloor}
+        onSalaryFloorChange={setSalaryFloor}
+        selectedTags={selectedTags}
+        onTagToggle={toggleTag}
+        onResetFilters={resetFilters}
       />
       {isLoading && (
         <p className="text-sm text-slate-500">Chargement des offres…</p>
