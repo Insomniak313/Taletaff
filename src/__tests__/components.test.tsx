@@ -68,7 +68,7 @@ describe("UI components", () => {
     expect(screen.getByText("Lead Designer")).toBeInTheDocument();
     expect(screen.getByText(/Remote friendly/i)).toBeInTheDocument();
     rerender(<JobCard job={{ ...sampleJob, id: "2", remote: false }} />);
-    expect(screen.getByText(/Sur site/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Lyon/).length).toBeGreaterThan(0);
     rerender(
       <JobCard
         job={{
@@ -103,6 +103,40 @@ describe("UI components", () => {
     );
     const sanitizedLine = screen.getByText(/Check/).textContent ?? "";
     expect(sanitizedLine).toMatch(/&#xGG;.*&unknown;/);
+    rerender(
+      <JobCard
+        job={{
+          ...sampleJob,
+          id: "7",
+          company: "",
+          location: "",
+          remote: false,
+        }}
+      />
+    );
+    expect(screen.getByText(/Entreprise confidentielle/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sur site/i)).toBeInTheDocument();
+    expect(screen.getByText(/À définir/i)).toBeInTheDocument();
+    rerender(
+      <JobCard
+        job={{
+          ...sampleJob,
+          id: "8",
+          tags: ["One", "Two", "Three", "Four", "Five"],
+        }}
+      />
+    );
+    expect(screen.getByText("+1 tag")).toBeInTheDocument();
+    rerender(
+      <JobCard
+        job={{
+          ...sampleJob,
+          id: "9",
+          tags: ["One", "Two", "Three", "Four", "Five", "Six"],
+        }}
+      />
+    );
+    expect(screen.getByText("+2 tags")).toBeInTheDocument();
   });
 
   it("affiche la liste des jobs", () => {
@@ -119,6 +153,8 @@ describe("UI components", () => {
     const onTagToggle = vi.fn();
     const onResetFilters = vi.fn();
     const onProviderChange = vi.fn();
+    const onPageChange = vi.fn();
+    const onPageSizeChange = vi.fn();
     const summary = {
       count: 2,
       remoteShare: 0.5,
@@ -146,6 +182,12 @@ describe("UI components", () => {
       selectedTags: [],
       onTagToggle,
       onResetFilters,
+      page: 1,
+      pageCount: 3,
+      pageSize: 10,
+      pageSizeOptions: [10, 20, 40],
+      onPageChange,
+      onPageSizeChange,
     };
     const { rerender } = render(<JobFilters {...currentProps} />);
     const rerenderWith = (overrides: Partial<JobFiltersPropsType> = {}) => {
@@ -162,7 +204,7 @@ describe("UI components", () => {
     fireEvent.click(screen.getByText(jobCategories[1].title));
     rerenderWith({ activeCategory: jobCategories[1].slug });
     fireEvent.click(screen.getByText(jobCategories[1].title));
-    fireEvent.change(screen.getByLabelText(/Localisation ciblée/i), {
+    fireEvent.change(screen.getByLabelText(/Localisation rapide/i), {
       target: { value: "Paris" },
     });
     rerenderWith({ location: "Paris" });
@@ -209,11 +251,23 @@ describe("UI components", () => {
       errorMessage: "Erreur lors du chargement",
     });
     expect(screen.getByText(/Erreur lors du chargement/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Par page/i), {
+      target: { value: "20" },
+    });
+    expect(onPageSizeChange).toHaveBeenLastCalledWith(20);
+    rerenderWith({ pageSize: 20 });
+    fireEvent.click(screen.getByRole("button", { name: "Suivant" }));
+    expect(onPageChange).toHaveBeenLastCalledWith(2);
+    rerenderWith({ page: 2 });
+    fireEvent.click(screen.getByRole("button", { name: "Précédent" }));
+    expect(onPageChange).toHaveBeenLastCalledWith(1);
   });
 
   it("ajoute les localisations et tags manquants aux suggestions", () => {
     const noop = vi.fn();
     const onSalaryFloorChange = vi.fn();
+    const onPageChange = vi.fn();
+    const onPageSizeChange = vi.fn();
     render(
       <JobFilters
         categories={jobCategories}
@@ -241,6 +295,12 @@ describe("UI components", () => {
         selectedTags={["Go"]}
         onTagToggle={noop}
         onResetFilters={noop}
+        page={2}
+        pageCount={4}
+        pageSize={20}
+        pageSizeOptions={[10, 20, 40]}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
     );
     expect(screen.getByDisplayValue("Nantes")).toBeInTheDocument();
