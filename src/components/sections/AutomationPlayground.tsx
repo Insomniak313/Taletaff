@@ -69,14 +69,14 @@ const flowSteps: FlowStep[] = [
   }
 ];
 
-const formatProgress = (value: number) => `${Math.min(Math.max(value, 0), 100)}%`;
+export const formatProgress = (value: number) => `${Math.min(Math.max(value, 0), 100)}%`;
+
+export const resolveActiveStep = (stepId: string): FlowStep =>
+  flowSteps.find((step) => step.id === stepId) ?? flowSteps[0];
 
 export const AutomationPlayground = () => {
   const [activeStepId, setActiveStepId] = useState(flowSteps[0].id);
-  const activeStep = useMemo(
-    () => flowSteps.find((step) => step.id === activeStepId) ?? flowSteps[0],
-    [activeStepId]
-  );
+  const activeStep = useMemo(() => resolveActiveStep(activeStepId), [activeStepId]);
 
   return (
     <section className="rounded-[32px] border border-white/70 bg-white/85 p-8 shadow-lg">

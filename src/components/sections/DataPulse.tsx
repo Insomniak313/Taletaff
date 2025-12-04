@@ -72,7 +72,7 @@ const metricSets: MetricSet[] = [
   }
 ];
 
-const buildGeometry = (values: number[]): ChartGeometry => {
+export const buildGeometry = (values: number[]): ChartGeometry => {
   if (values.length === 0) {
     return { pathD: "", areaD: "", points: [] };
   }
