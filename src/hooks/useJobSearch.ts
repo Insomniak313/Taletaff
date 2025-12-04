@@ -14,6 +14,7 @@ interface JobSearchState {
 
 interface ClientFilters {
   category?: string;
+  provider?: JobRecord["source"];
   query: string;
   location: string;
   remoteOnly: boolean;
@@ -43,6 +44,7 @@ const useDebouncedValue = <T,>(value: T, delay: number) => {
 export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
   const [filters, setFilters] = useState<ClientFilters>({
     category: initialCategory,
+    provider: undefined,
     query: "",
     location: "",
     remoteOnly: false,
@@ -73,6 +75,7 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
       const params = new URLSearchParams();
 
       if (nextFilters.category) params.set("category", nextFilters.category);
+      if (nextFilters.provider) params.set("provider", nextFilters.provider);
       if (nextFilters.query) params.set("query", nextFilters.query);
       if (nextFilters.location) params.set("location", nextFilters.location);
       if (nextFilters.remoteOnly) params.set("remote", "true");
@@ -117,8 +120,12 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
     return () => controllerRef.current.abort();
   }, [effectiveFilters, runSearch]);
 
-  const setCategory = useCallback((value: string) => {
+  const setCategory = useCallback((value?: string) => {
     setFilters((prev) => ({ ...prev, category: value }));
+  }, []);
+
+  const setProvider = useCallback((value?: JobRecord["source"]) => {
+    setFilters((prev) => ({ ...prev, provider: value }));
   }, []);
 
   const setQuery = useCallback((value: string) => {
@@ -155,6 +162,7 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
       remoteOnly: false,
       salaryFloor: null,
       selectedTags: [],
+      provider: undefined,
     }));
   }, []);
 
@@ -167,6 +175,8 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
   return {
     category: filters.category,
     setCategory,
+    provider: filters.provider,
+    setProvider,
     query: filters.query,
     setQuery,
     location: filters.location,

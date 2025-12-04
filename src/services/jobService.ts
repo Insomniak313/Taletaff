@@ -5,10 +5,15 @@ import {
   scoreByRelevance,
 } from "@/features/jobs/search/searchUtils";
 import type { JobFilters, JobRecord, JobSearchResult } from "@/types/job";
+import { isJobProviderId } from "@/config/jobProviders";
 
 const TABLE_NAME = "jobs";
 
-const mapRecord = (record: Record<string, unknown>): JobRecord => ({
+const mapRecord = (record: Record<string, unknown>): JobRecord => {
+  const sourceValue = typeof record.source === "string" ? record.source : undefined;
+  const source = sourceValue && isJobProviderId(sourceValue) ? sourceValue : undefined;
+
+  return {
   id: String(record.id),
   title: String(record.title ?? ""),
   company: String(record.company ?? ""),
@@ -20,10 +25,11 @@ const mapRecord = (record: Record<string, unknown>): JobRecord => ({
   salaryMax: Number(record.salary_max ?? record.salaryMax ?? 0),
   tags: (record.tags as string[]) ?? [],
   createdAt: String(record.created_at ?? record.createdAt ?? new Date().toISOString()),
-  source: record.source ? String(record.source) : undefined,
+    source,
   externalId: record.external_id ? String(record.external_id) : undefined,
   fetchedAt: record.fetched_at ? String(record.fetched_at) : undefined,
-});
+  };
+};
 
 export const jobService = {
   async searchJobs(filters: JobFilters = {}): Promise<JobSearchResult> {
@@ -34,6 +40,10 @@ export const jobService = {
 
     if (filters.category) {
       query = query.eq("category", filters.category);
+    }
+
+    if (filters.provider) {
+      query = query.eq("source", filters.provider);
     }
 
     if (filters.location) {

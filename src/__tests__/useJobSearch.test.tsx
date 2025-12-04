@@ -130,6 +130,31 @@ describe("useJobSearch", () => {
     expect(lastCall).toContain("tags=TypeScript");
   });
 
+  it("applique et réinitialise le filtre provider", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ jobs: mockJobs, summary: mockSummary }),
+    } as Response);
+
+    const { result } = renderHook(() => useJobSearch({}));
+
+    await waitFor(() => expect(result.current.jobs).toHaveLength(1));
+
+    await act(async () => {
+      result.current.setProvider("apec");
+      await result.current.fetchJobs();
+    });
+
+    const lastUrl = (fetchSpy.mock.calls.at(-1)?.[0] as string) ?? "";
+    expect(lastUrl).toContain("provider=apec");
+
+    await act(async () => {
+      result.current.resetFilters();
+    });
+
+    expect(result.current.provider).toBeUndefined();
+  });
+
   it("réinitialise les filtres étendus", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,

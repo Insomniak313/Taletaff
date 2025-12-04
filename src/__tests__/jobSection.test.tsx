@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JobSearchSection } from "@/features/jobs/components/JobSearchSection";
 
 const setCategory = vi.fn();
+const setProvider = vi.fn();
 const setQuery = vi.fn();
 const setLocation = vi.fn();
 const toggleRemoteOnly = vi.fn();
@@ -13,6 +14,7 @@ const fetchJobs = vi.fn();
 
 const state = {
   category: "product",
+  provider: undefined as string | undefined,
   query: "",
   jobs: [],
   isLoading: false,
@@ -35,6 +37,7 @@ vi.mock("@/hooks/useJobSearch", () => ({
     ...state,
     setCategory,
     setQuery,
+    setProvider,
     setLocation,
     toggleRemoteOnly,
     setSalaryFloor,
