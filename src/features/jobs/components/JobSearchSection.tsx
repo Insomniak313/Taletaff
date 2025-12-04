@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { JobFilters } from "@/features/jobs/components/JobFilters";
 import { JobList } from "@/features/jobs/components/JobList";
 import { jobCategories } from "@/config/jobCategories";
 import { jobProviderFilters, type JobProviderFilterOption } from "@/config/jobProviders";
 import { useJobSearch } from "@/hooks/useJobSearch";
 import type { JobRecord } from "@/types/job";
-
-const PAGE_SIZE = 6;
 
 const computeJobsSignature = (jobs: ReadonlyArray<JobRecord>) =>
   jobs.map((job) => job.id).join("|");
@@ -21,7 +19,6 @@ const PAGE_SIZE_OPTIONS = [10, 20, 40];
 const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
 
 export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}) => {
-  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const {
     category,
@@ -48,15 +45,18 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
   const signature = useMemo(() => computeJobsSignature(jobs), [jobs]);
   const [pageState, setPageState] = useState({ page: 1, signature });
 
-  const pageCount = useMemo(() => Math.max(Math.ceil(jobs.length / PAGE_SIZE), 1), [jobs.length]);
+  const pageCount = useMemo(
+    () => Math.max(Math.ceil(jobs.length / pageSize), 1),
+    [jobs.length, pageSize]
+  );
 
   const requestedPage = pageState.signature === signature ? pageState.page : 1;
   const page = Math.min(Math.max(requestedPage, 1), pageCount);
 
   const paginatedJobs = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
-    return jobs.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [jobs, page]);
+    const startIndex = (page - 1) * pageSize;
+    return jobs.slice(startIndex, startIndex + pageSize);
+  }, [jobs, page, pageSize]);
 
   const updatePage = useCallback(
     (nextPage: number) => {
@@ -70,6 +70,80 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
 
   const goToPrevious = useCallback(() => updatePage(page - 1), [page, updatePage]);
   const goToNext = useCallback(() => updatePage(page + 1), [page, updatePage]);
+
+  const handleCategoryChange = useCallback(
+    (nextCategory?: string) => {
+      setCategory(nextCategory);
+      updatePage(1);
+    },
+    [setCategory, updatePage]
+  );
+
+  const handleProviderChange = useCallback(
+    (value?: JobProviderFilterOption["id"]) => {
+      setProvider(value);
+      updatePage(1);
+    },
+    [setProvider, updatePage]
+  );
+
+  const handleQueryChange = useCallback(
+    (value: string) => {
+      setQuery(value);
+      updatePage(1);
+    },
+    [setQuery, updatePage]
+  );
+
+  const handleLocationChange = useCallback(
+    (value: string) => {
+      setLocation(value);
+      updatePage(1);
+    },
+    [setLocation, updatePage]
+  );
+
+  const handleRemoteToggle = useCallback(() => {
+    toggleRemoteFilter();
+    updatePage(1);
+  }, [toggleRemoteFilter, updatePage]);
+
+  const handleSalaryFloorChange = useCallback(
+    (value: number | null) => {
+      setSalaryFloor(value);
+      updatePage(1);
+    },
+    [setSalaryFloor, updatePage]
+  );
+
+  const handleTagToggle = useCallback(
+    (tag: string) => {
+      toggleTagFilter(tag);
+      updatePage(1);
+    },
+    [toggleTagFilter, updatePage]
+  );
+
+  const handleResetFilters = useCallback(() => {
+    resetFilters();
+    setPageSize(DEFAULT_PAGE_SIZE);
+    updatePage(1);
+  }, [resetFilters, updatePage]);
+
+  const handlePageChange = useCallback(
+    (nextPage: number) => {
+      updatePage(nextPage);
+    },
+    [updatePage]
+  );
+
+  const handlePageSizeChange = useCallback(
+    (size: number) => {
+      setPageSize(size);
+      updatePage(1);
+    },
+    [updatePage]
+  );
 
   return (
     <section className="space-y-6">
@@ -105,7 +179,7 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
       {!isLoading && (
         <>
           <JobList jobs={paginatedJobs} />
-          {jobs.length > PAGE_SIZE && (
+          {jobs.length > pageSize && (
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-600">
               <button
                 type="button"
