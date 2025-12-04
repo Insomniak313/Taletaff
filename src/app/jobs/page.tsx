@@ -1,18 +1,29 @@
 import type { Metadata } from "next";
+import { jobCategoryMap } from "@/config/jobCategories";
 import { absoluteUrl, siteMetadata } from "@/config/siteMetadata";
 import { JobSearchSection } from "@/features/jobs/components/JobSearchSection";
 
-const canonicalUrl = absoluteUrl("/jobs");
-const ogImageUrl = absoluteUrl(siteMetadata.defaultImage);
+const operationsCategory = jobCategoryMap.operations;
 
-export const metadata: Metadata = {
+const fallbackSeo = {
   title: "Offres d'emploi qualifiées · Taletaff",
   description: "Naviguez par catégorie, stack et localisation pour identifier l'offre parfaite.",
-  keywords: ["job board", "emplois qualifiés", "recherche emploi"],
+  keywords: ["job board", "emplois qualifiés", "recherche emploi"] as const,
+};
+
+const seo = operationsCategory?.seo ?? fallbackSeo;
+const canonicalUrl = absoluteUrl("/jobs");
+const ogImageUrl = absoluteUrl(siteMetadata.defaultImage);
+const ogImageAlt = operationsCategory?.title ?? fallbackSeo.title;
+
+export const metadata: Metadata = {
+  title: seo.title,
+  description: seo.description,
+  keywords: [...seo.keywords],
   alternates: { canonical: canonicalUrl },
   openGraph: {
-    title: "Offres d'emploi qualifiées · Taletaff",
-    description: "Naviguez par catégorie, stack et localisation pour identifier l'offre parfaite.",
+    title: seo.title,
+    description: seo.description,
     url: canonicalUrl,
     siteName: siteMetadata.organization.name,
     locale: siteMetadata.locale,
@@ -22,7 +33,7 @@ export const metadata: Metadata = {
         url: ogImageUrl,
         width: 1200,
         height: 630,
-        alt: "Offres d'emploi qualifiées · Taletaff",
+        alt: ogImageAlt,
       },
     ],
   },
