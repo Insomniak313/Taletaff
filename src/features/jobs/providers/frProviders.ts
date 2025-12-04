@@ -34,6 +34,17 @@ const joinStrings = (parts: Array<string | undefined | null>): string | undefine
   return filtered.length > 0 ? filtered.join(", ") : undefined;
 };
 
+const clampLimit = (value: number | undefined, max: number): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return max;
+  }
+  const normalized = Math.floor(value);
+  if (normalized <= 0) {
+    return 1;
+  }
+  return Math.min(normalized, max);
+};
+
 const asStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value
@@ -182,7 +193,16 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("FRANCE_TRAVAIL_API_URL"),
     defaultCategory: "engineering",
     itemsPath: ["resultats"],
-    query: { range: "0-199" },
+    maxBatchSize: 200,
+    pagination: { mode: "page", maxPages: 10 },
+    buildQuery: (context) => {
+      const limit = clampLimit(context.limit, 200);
+      const page = context.page ?? 1;
+      const normalizedPage = page < 1 ? 1 : Math.floor(page);
+      const start = (normalizedPage - 1) * limit;
+      const end = start + limit - 1;
+      return { range: `${start}-${end}` };
+    },
     headers: bearerHeaders("FRANCE_TRAVAIL_API_TOKEN"),
     mapItem: (record) =>
       buildProviderJob(record, {
@@ -402,11 +422,18 @@ const frJobProviders: JobProvider[] = [
     label: "Arbeitnow",
     endpoint: optionalEnv("ARBEITNOW_API_URL") ?? "https://www.arbeitnow.com/api/job-board-api",
     defaultCategory: "engineering",
-    itemsPath: ["data"],
-    buildQuery: (context) => ({
-      page: 1,
-      per_page: Math.min(Math.max(context.limit ?? 100, 1), 100),
-    }),
+    itemsPath: ["data", "jobs"],
+    maxBatchSize: 100,
+    pagination: { mode: "page", maxPages: 10 },
+    buildQuery: (context) => {
+      const limit = clampLimit(context.limit, 100);
+      const page = context.page ?? 1;
+      const normalizedPage = page < 1 ? 1 : Math.floor(page);
+      return {
+        page: normalizedPage,
+        per_page: limit,
+      };
+    },
     mapItem: (record) => {
       const externalId = stringFrom(record.slug);
       const title = stringFrom(record.title);
@@ -598,9 +625,19 @@ const frJobProviders: JobProvider[] = [
     label: "HeadHunter",
     endpoint: optionalEnv("HEADHUNTER_API_URL") ?? "https://api.hh.ru/vacancies",
     defaultCategory: "operations",
+    maxBatchSize: 100,
+    pagination: { mode: "page", startPage: 0, maxPages: 10 },
     query: {
-      per_page: 50,
       order_by: "publication_time",
+    },
+    buildQuery: (context) => {
+      const limit = clampLimit(context.limit, 100);
+      const page = context.page ?? 0;
+      const normalizedPage = page < 0 ? 0 : Math.floor(page);
+      return {
+        per_page: limit,
+        page: normalizedPage,
+      };
     },
     itemsPath: ["items"],
     mapItem: (record) => {
@@ -649,15 +686,22 @@ const frJobProviders: JobProvider[] = [
     endpoint: optionalEnv("TORRE_API_URL") ?? "https://search.torre.co/opportunities/_search/",
     defaultCategory: "product",
     method: "POST",
-    body: (context) => ({
-      size: Math.min(Math.max(context.limit ?? 20, 1), 50),
-      offset: 0,
-      aggregate: false,
-      "skill/role": {
-        text: "developer",
-        experience: "potential-to-develop",
-      },
-    }),
+    maxBatchSize: 50,
+    pagination: { mode: "page", startPage: 0, maxPages: 10 },
+    body: (context) => {
+      const size = clampLimit(context.limit, 50);
+      const page = context.page ?? 0;
+      const normalizedPage = page < 0 ? 0 : Math.floor(page);
+      return {
+        size,
+        offset: normalizedPage * size,
+        aggregate: false,
+        "skill/role": {
+          text: "developer",
+          experience: "potential-to-develop",
+        },
+      };
+    },
     itemsPath: ["results"],
     mapItem: (record) => {
       const externalId = stringFrom(record.id);
@@ -744,8 +788,12 @@ const frJobProviders: JobProvider[] = [
     label: "The Muse",
     endpoint: optionalEnv("THEMUSE_API_URL") ?? "https://www.themuse.com/api/public/jobs",
     defaultCategory: "operations",
-    query: {
-      page: 1,
+    maxBatchSize: 20,
+    pagination: { mode: "page", maxPages: 10 },
+    buildQuery: (context) => {
+      const page = context.page ?? 1;
+      const normalizedPage = page < 1 ? 1 : Math.floor(page);
+      return { page: normalizedPage };
     },
     itemsPath: ["results"],
     mapItem: (record) => {

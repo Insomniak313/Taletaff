@@ -37,6 +37,13 @@ export interface ProviderJob {
 export interface JobProviderContext {
   since?: Date;
   limit?: number;
+  page?: number;
+}
+
+export interface ProviderPagination {
+  mode: "page";
+  startPage?: number;
+  maxPages?: number;
 }
 
 export interface JobProviderSettings {
@@ -51,6 +58,7 @@ export interface JobProvider {
   label: string;
   defaultCategory: string;
   maxBatchSize?: number;
+  pagination?: ProviderPagination;
   isConfigured: (settings?: JobProviderSettings) => boolean;
   fetchJobs: (context: JobProviderContext, settings?: JobProviderSettings) => Promise<ProviderJob[]>;
 }
