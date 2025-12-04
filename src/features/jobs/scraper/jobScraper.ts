@@ -9,6 +9,8 @@ import type {
 
 const JOBS_TABLE = "jobs";
 const UPSERT_CHUNK_SIZE = 200;
+const DEFAULT_MAX_PAGINATION_PAGES = 5;
+const MAX_JOBS_PER_PROVIDER = 2000;
 
 type JobsClient = SupabaseClient<Record<string, unknown>, "public">;
 
@@ -105,6 +107,48 @@ const upsertJobs = async (client: JobsClient, rows: JobInsertRow[]): Promise<num
   return persisted;
 };
 
+const resolveFetchLimit = (provider: JobProvider): number => {
+  return provider.maxBatchSize ?? UPSERT_CHUNK_SIZE;
+};
+
+const fetchProviderJobs = async (
+  provider: JobProvider,
+  settings: JobProviderSettings | undefined
+): Promise<ProviderJob[]> => {
+  const limit = resolveFetchLimit(provider);
+
+  if (!provider.pagination) {
+    return provider.fetchJobs({ limit }, settings);
+  }
+
+  const jobs: ProviderJob[] = [];
+  const startPage = provider.pagination.startPage ?? 1;
+  const maxPages = provider.pagination.maxPages ?? DEFAULT_MAX_PAGINATION_PAGES;
+  let currentPage = startPage;
+
+  for (let index = 0; index < maxPages; index += 1) {
+    const batch = await provider.fetchJobs({ limit, page: currentPage }, settings);
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    jobs.push(...batch);
+
+    if (jobs.length >= MAX_JOBS_PER_PROVIDER) {
+      break;
+    }
+
+    if (batch.length < limit) {
+      break;
+    }
+
+    currentPage += 1;
+  }
+
+  return jobs.slice(0, MAX_JOBS_PER_PROVIDER);
+};
+
 export const scrapeProvider = async (
   provider: JobProvider,
   settings: JobProviderSettings | undefined,
@@ -114,7 +158,7 @@ export const scrapeProvider = async (
     return { providerId: provider.id, fetched: 0, persisted: 0 };
   }
 
-  const jobs = await provider.fetchJobs({ limit: provider.maxBatchSize }, settings);
+  const jobs = await fetchProviderJobs(provider, settings);
   const rows = jobs
     .map((job) => toJobRow(provider, job))
     .filter((row): row is JobInsertRow => Boolean(row));

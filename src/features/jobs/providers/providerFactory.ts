@@ -4,6 +4,7 @@ import type {
   JobProviderId,
   JobProviderSettings,
   ProviderJob,
+  ProviderPagination,
 } from "@/features/jobs/providers/types";
 
 const DEFAULT_TIMEOUT_MS = 12000;
@@ -22,6 +23,7 @@ type JsonProviderDefinition = {
   body?: Record<string, unknown> | ((context: JobProviderContext) => Record<string, unknown>);
   itemsPath?: JsonItemsPath;
   maxBatchSize?: number;
+  pagination?: ProviderPagination;
   mapItem: (record: Record<string, unknown>) => ProviderJob | null;
 };
 
@@ -88,6 +90,7 @@ export const createJsonProvider = (definition: JsonProviderDefinition): JobProvi
     label: definition.label,
     defaultCategory: definition.defaultCategory,
     maxBatchSize: definition.maxBatchSize ?? 200,
+    pagination: definition.pagination,
     isConfigured: (settings) => Boolean(resolveEndpoint(settings)),
     async fetchJobs(context, settings) {
       const endpoint = resolveEndpoint(settings);
