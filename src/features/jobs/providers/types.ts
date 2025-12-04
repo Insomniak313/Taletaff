@@ -9,7 +9,16 @@ export type JobProviderId =
   | "monster-fr"
   | "indeed-fr"
   | "talent-io"
-  | "remotive";
+  | "arbeitnow"
+  | "jobicy"
+  | "remoteok"
+  | "thehub"
+  | "weworkremotely"
+  | "hackernews-jobs"
+  | "headhunter"
+  | "torre"
+  | "zippia"
+  | "themuse";
 
 export interface ProviderJob {
   externalId: string;

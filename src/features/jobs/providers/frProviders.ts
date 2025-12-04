@@ -11,67 +11,51 @@ import {
 
 type RecordValue = Record<string, unknown>;
 
-const REMOTIVE_DEFAULT_ENDPOINT = "https://remotive.com/api/remote-jobs";
+const isNumericString = (value: string): boolean => /^-?\d+(\.\d+)?$/.test(value);
 
-const REMOTIVE_CATEGORY_RULES = [
-  { slug: "engineering", keywords: ["engineer", "software", "developer", "data", "tech", "devops"] },
-  { slug: "product", keywords: ["product", "designer", "ux", "ui"] },
-  { slug: "marketing", keywords: ["marketing", "growth", "brand", "sales", "communication"] },
-  { slug: "operations", keywords: ["ops", "operation", "customer", "support", "success", "finance", "people"] },
-] as const;
-
-const inferRemotiveCategory = (value?: string): string | undefined => {
-  if (!value) {
-    return undefined;
+const publishedAtFromEpoch = (value: unknown): string | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const ms = value < 10_000_000_000 ? value * 1000 : value;
+    return new Date(ms).toISOString();
   }
-  const normalizedCategory = value.toLowerCase();
-  const matchingRule = REMOTIVE_CATEGORY_RULES.find(({ keywords }) =>
-    keywords.some((keyword) => normalizedCategory.includes(keyword))
-  );
-  return matchingRule?.slug;
+  if (typeof value === "string" && isNumericString(value)) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return publishedAtFromEpoch(parsed);
+    }
+  }
+  return publishedAtFrom(value);
 };
 
-const parseRemotiveSalary = (
-  value: unknown
-): { salaryMin?: number; salaryMax?: number } => {
-  if (typeof value !== "string") {
+const joinStrings = (parts: Array<string | undefined | null>): string | undefined => {
+  const filtered = parts
+    .map((part) => (typeof part === "string" ? part.trim() : undefined))
+    .filter((part): part is string => Boolean(part));
+  return filtered.length > 0 ? filtered.join(", ") : undefined;
+};
+
+const asStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => stringFrom(entry))
+      .filter((entry): entry is string => Boolean(entry));
+  }
+  const asStringValue = stringFrom(value);
+  return asStringValue ? [asStringValue] : [];
+};
+
+const parseWeWorkRemotelyTitle = (value?: string): { company?: string; role?: string } => {
+  if (!value) {
     return {};
   }
-
-  const matches = value.match(/(\d+(?:[.,]\d+)?)(\s*[kK])?/g);
-
-  if (!matches || matches.length === 0) {
-    return {};
+  const [maybeCompany, ...rest] = value.split(":");
+  if (rest.length === 0) {
+    return { role: value.trim() };
   }
-
-  const amounts = matches.slice(0, 2).map((match) => {
-    const numericMatch = match.match(/(\d+(?:[.,]\d+)?)/);
-    if (!numericMatch) {
-      return null;
-    }
-    const numericValue = Number(numericMatch[1].replace(",", "."));
-    if (!Number.isFinite(numericValue)) {
-      return null;
-    }
-    const hasThousands = match.toLowerCase().includes("k");
-    return Math.round(numericValue * (hasThousands ? 1000 : 1));
-  });
-
-  const sanitizedAmounts = amounts.filter(
-    (amount): amount is number => amount !== null
-  );
-
-  if (sanitizedAmounts.length === 0) {
-    return {};
-  }
-
-  const salaryMin = sanitizedAmounts[0];
-  const salaryMax =
-    sanitizedAmounts.length > 1
-      ? Math.max(salaryMin, sanitizedAmounts[1])
-      : salaryMin;
-
-  return { salaryMin, salaryMax };
+  return {
+    company: maybeCompany.trim(),
+    role: rest.join(":").trim(),
+  };
 };
 
 const readValue = (record: RecordValue, key: string): unknown => {
@@ -414,39 +398,385 @@ const frJobProviders: JobProvider[] = [
       }),
   }),
   createJsonProvider({
-    id: "remotive",
-    label: "Remotive",
-    endpoint: REMOTIVE_DEFAULT_ENDPOINT,
-    defaultCategory: "operations",
-    itemsPath: ["jobs"],
-    maxBatchSize: 20,
-    query: { limit: 20 },
+    id: "arbeitnow",
+    label: "Arbeitnow",
+    endpoint: optionalEnv("ARBEITNOW_API_URL") ?? "https://www.arbeitnow.com/api/job-board-api",
+    defaultCategory: "engineering",
+    itemsPath: ["data"],
+    buildQuery: (context) => ({
+      page: 1,
+      per_page: Math.min(Math.max(context.limit ?? 100, 1), 100),
+    }),
     mapItem: (record) => {
-      const job = buildProviderJob(record, {
-        externalIdKeys: ["id"],
-        titleKeys: ["title"],
-        companyKeys: ["company_name"],
-        locationKeys: ["candidate_required_location"],
-        descriptionKeys: ["description"],
-        categoryKeys: ["category"],
-        tagKeys: ["tags"],
-        publishedAtKeys: ["publication_date"],
-      });
-
-      if (!job) {
+      const externalId = stringFrom(record.slug);
+      const title = stringFrom(record.title);
+      if (!externalId || !title) {
         return null;
       }
-
-      const normalizedCategory = inferRemotiveCategory(job.category);
-      const salaryRange = parseRemotiveSalary(record.salary);
-
+      const jobTypes = asStringArray(record.job_types ?? record.types);
+      const tags = Array.from(new Set([...coerceTags(record.tags), ...jobTypes])).slice(0, 8);
       return {
-        ...job,
+        externalId,
+        title,
+        company: stringFrom(record.company_name) ?? "Entreprise confidentielle",
+        location: stringFrom(record.location),
+        description: stringFrom(record.description) ?? "",
+        category: jobTypes[0],
+        tags,
+        remote: record.remote !== undefined ? booleanFrom(record.remote) : undefined,
+        salaryMin: numberFrom(record.salary_min) ?? null,
+        salaryMax: numberFrom(record.salary_max) ?? null,
+        publishedAt: publishedAtFromEpoch(record.created_at) ?? publishedAtFrom(record.updated_at),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "jobicy",
+    label: "Jobicy",
+    endpoint: optionalEnv("JOBICY_API_URL") ?? "https://jobicy.com/api/v2/remote-jobs",
+    defaultCategory: "operations",
+    itemsPath: ["jobs"],
+    mapItem: (record) => {
+      const externalId = stringFrom(record.jobSlug) ?? stringFrom(record.id);
+      const title = stringFrom(record.jobTitle);
+      if (!externalId || !title) {
+        return null;
+      }
+      const industryTags = asStringArray(record.jobIndustry);
+      const jobTypes = asStringArray(record.jobType);
+      const levels = asStringArray(record.jobLevel);
+      const tags = Array.from(new Set([...industryTags, ...jobTypes, ...levels])).slice(0, 8);
+      return {
+        externalId,
+        title,
+        company: stringFrom(record.companyName) ?? "Entreprise confidentielle",
+        location: stringFrom(record.jobGeo),
+        description: stringFrom(record.jobDescription) ?? "",
+        category: industryTags[0],
+        tags,
         remote: true,
-        location: job.location ?? "Remote",
-        category: normalizedCategory ?? job.category ?? undefined,
-        salaryMin: salaryRange.salaryMin ?? job.salaryMin ?? null,
-        salaryMax: salaryRange.salaryMax ?? job.salaryMax ?? null,
+        salaryMin: numberFrom(record.salaryMin) ?? null,
+        salaryMax: numberFrom(record.salaryMax) ?? null,
+        publishedAt: publishedAtFrom(record.pubDate ?? record.postedDate ?? record.createdAt),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "remoteok",
+    label: "RemoteOK",
+    endpoint: optionalEnv("REMOTEOK_API_URL") ?? "https://remoteok.com/api",
+    defaultCategory: "engineering",
+    mapItem: (record) => {
+      const externalId = stringFrom(record.id) ?? stringFrom(record.slug);
+      const title = stringFrom(record.position) ?? stringFrom(record.title);
+      if (!externalId || !title || typeof record !== "object") {
+        return null;
+      }
+      const company = stringFrom((record as RecordValue).company);
+      if (!company) {
+        return null;
+      }
+      return {
+        externalId,
+        title,
+        company,
+        location: stringFrom((record as RecordValue).location),
+        description: stringFrom((record as RecordValue).description) ?? "",
+        category: stringFrom((record as RecordValue).category),
+        tags: coerceTags((record as RecordValue).tags),
+        remote: true,
+        salaryMin: numberFrom((record as RecordValue).salary_min) ?? null,
+        salaryMax: numberFrom((record as RecordValue).salary_max) ?? null,
+        publishedAt: publishedAtFrom((record as RecordValue).date),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "thehub",
+    label: "The Hub",
+    endpoint: optionalEnv("THEHUB_API_URL") ?? "https://thehub.io/api/jobs",
+    defaultCategory: "product",
+    itemsPath: ["docs"],
+    mapItem: (record) => {
+      const externalId = stringFrom(record.id);
+      const title = stringFrom(record.title);
+      if (!externalId || !title) {
+        return null;
+      }
+      const industries = asStringArray(record.industries);
+      const company = record.company as RecordValue | undefined;
+      const perks = Array.isArray(record.perks)
+        ? (record.perks as RecordValue[]).map((perk) => stringFrom(perk.name)).filter((perk): perk is string => Boolean(perk))
+        : [];
+      const tags = Array.from(new Set([...industries, ...perks])).slice(0, 8);
+      const location = record.location as RecordValue | undefined;
+      return {
+        externalId,
+        title,
+        company: stringFrom(company?.name) ?? "Entreprise confidentielle",
+        location: joinStrings([
+          stringFrom(location?.address),
+          stringFrom(location?.locality),
+          stringFrom(location?.country),
+        ]),
+        description: stringFrom(record.description) ?? "",
+        category: industries[0],
+        tags,
+        remote: record.isRemote !== undefined ? booleanFrom(record.isRemote) : undefined,
+        publishedAt: publishedAtFrom(record.publishedAt ?? record.createdAt),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "weworkremotely",
+    label: "We Work Remotely (RSS)",
+    endpoint: optionalEnv("WEWORKREMOTELY_API_URL") ?? "https://api.rss2json.com/v1/api.json",
+    defaultCategory: "engineering",
+    itemsPath: ["items"],
+    query: {
+      rss_url: "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+    },
+    mapItem: (record) => {
+      const { company, role } = parseWeWorkRemotelyTitle(stringFrom(record.title));
+      const externalId = stringFrom(record.guid) ?? stringFrom(record.link);
+      const title = role ?? stringFrom(record.title);
+      if (!externalId || !title) {
+        return null;
+      }
+      const description = stringFrom(record.content) ?? stringFrom(record.description) ?? "";
+      const categories = coerceTags(record.categories);
+      return {
+        externalId,
+        title,
+        company: company ?? "Entreprise confidentielle",
+        location: "Remote",
+        description,
+        category: categories[0],
+        tags: categories,
+        remote: true,
+        publishedAt: publishedAtFrom(record.pubDate),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "hackernews-jobs",
+    label: "Hacker News Jobs",
+    endpoint:
+      optionalEnv("HACKERNEWS_JOBS_API_URL") ??
+      "https://hn.algolia.com/api/v1/search_by_date",
+    defaultCategory: "engineering",
+    query: {
+      tags: "story,job",
+    },
+    itemsPath: ["hits"],
+    mapItem: (record) => {
+      const externalId = stringFrom(record.objectID);
+      const title = stringFrom(record.title);
+      if (!externalId || !title) {
+        return null;
+      }
+      const tags = asStringArray(record._tags);
+      const description =
+        stringFrom(record.story_text) ??
+        stringFrom(record.comment_text) ??
+        stringFrom(record.url) ??
+        "";
+      return {
+        externalId,
+        title,
+        company: stringFrom(record.author) ?? "Entreprise confidentielle",
+        description,
+        category: tags[0],
+        tags,
+        remote: title.toLowerCase().includes("remote") ? true : undefined,
+        publishedAt: publishedAtFrom(record.created_at),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "headhunter",
+    label: "HeadHunter",
+    endpoint: optionalEnv("HEADHUNTER_API_URL") ?? "https://api.hh.ru/vacancies",
+    defaultCategory: "operations",
+    query: {
+      per_page: 50,
+      order_by: "publication_time",
+    },
+    itemsPath: ["items"],
+    mapItem: (record) => {
+      const externalId = stringFrom(record.id);
+      const title = stringFrom(record.name);
+      if (!externalId || !title) {
+        return null;
+      }
+      const salary = record.salary as RecordValue | undefined;
+      const employer = record.employer as RecordValue | undefined;
+      const address = record.address as RecordValue | undefined;
+      const area = record.area as RecordValue | undefined;
+      const parentArea = area?.parent as RecordValue | undefined;
+      const snippet = record.snippet as RecordValue | undefined;
+      const professionalRoles = Array.isArray(record.professional_roles)
+        ? (record.professional_roles as RecordValue[]).map((role) => stringFrom(role.name)).filter((role): role is string => Boolean(role))
+        : [];
+      const schedules = Array.isArray(record.work_schedule_by_days)
+        ? (record.work_schedule_by_days as RecordValue[]).map((entry) => stringFrom(entry.name)).filter((entry): entry is string => Boolean(entry))
+        : [];
+      const workFormats = Array.isArray(record.work_format) ? (record.work_format as RecordValue[]) : [];
+      const remote = workFormats.some((format) => stringFrom(format.id)?.toLowerCase().includes("remote"));
+      const requirement = stringFrom(snippet?.requirement);
+      const responsibility = stringFrom(snippet?.responsibility);
+      return {
+        externalId,
+        title,
+        company: stringFrom(employer?.name) ?? "Entreprise confidentielle",
+        location:
+          stringFrom(address?.city) ??
+          stringFrom(area?.name) ??
+          stringFrom(parentArea?.name),
+        description: [requirement, responsibility].filter(Boolean).join("\n\n"),
+        category: professionalRoles[0],
+        tags: Array.from(new Set([...professionalRoles, ...schedules])).slice(0, 8),
+        remote: remote ? true : undefined,
+        salaryMin: salary ? numberFrom(salary.from) ?? null : null,
+        salaryMax: salary ? numberFrom(salary.to) ?? null : null,
+        publishedAt: publishedAtFrom(record.published_at),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "torre",
+    label: "Torre",
+    endpoint: optionalEnv("TORRE_API_URL") ?? "https://search.torre.co/opportunities/_search/",
+    defaultCategory: "product",
+    method: "POST",
+    body: (context) => ({
+      size: Math.min(Math.max(context.limit ?? 20, 1), 50),
+      offset: 0,
+      aggregate: false,
+      "skill/role": {
+        text: "developer",
+        experience: "potential-to-develop",
+      },
+    }),
+    itemsPath: ["results"],
+    mapItem: (record) => {
+      const externalId = stringFrom(record.id);
+      const title = stringFrom(record.objective) ?? stringFrom(record.tagline);
+      if (!externalId || !title) {
+        return null;
+      }
+      const organizations = Array.isArray(record.organizations) ? (record.organizations as RecordValue[]) : [];
+      const place = record.place as RecordValue | undefined;
+      const skills = Array.isArray(record.skills)
+        ? (record.skills as RecordValue[]).map((skill) => stringFrom(skill.name)).filter((skill): skill is string => Boolean(skill))
+        : [];
+      const serviceTypes = asStringArray(record.serviceTypes);
+      const compensation = (record.compensation as RecordValue | undefined)?.data as RecordValue | undefined;
+      const rawLocations = Array.isArray(place?.location) ? (place?.location as unknown[]) : [];
+      const locations = rawLocations
+        .map((entry) => stringFrom(entry))
+        .filter((entry): entry is string => Boolean(entry));
+      return {
+        externalId,
+        title,
+        company: stringFrom(organizations[0]?.name) ?? "Entreprise confidentielle",
+        location: joinStrings(locations),
+        description: stringFrom(record.tagline) ?? "",
+        category: stringFrom(record.commitment),
+        tags: Array.from(new Set([...skills, ...serviceTypes])).slice(0, 8),
+        remote: place?.remote === true || place?.locationType === "remote_anywhere",
+        salaryMin: compensation ? numberFrom(compensation.minAmount) ?? null : null,
+        salaryMax: compensation ? numberFrom(compensation.maxAmount) ?? null : null,
+        publishedAt: publishedAtFrom(record.created),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "zippia",
+    label: "Zippia",
+    endpoint: optionalEnv("ZIPPIA_API_URL") ?? "https://www.zippia.com/api/jobs/",
+    defaultCategory: "engineering",
+    method: "POST",
+    headers: () => ({
+      "user-agent": "Mozilla/5.0",
+    }),
+    body: (context) => ({
+      companySkills: false,
+      dismissedListingHashes: [],
+      fetchJobDesc: true,
+      jobTitle: "Software Engineer",
+      locations: [],
+      numJobs: Math.min(Math.max(context.limit ?? 20, 1), 50),
+      previousListingHashes: [],
+    }),
+    itemsPath: ["jobs"],
+    mapItem: (record) => {
+      const externalId = stringFrom(record.jobId) ?? stringFrom(record.listingHash);
+      const title = stringFrom(record.jobTitle);
+      if (!externalId || !title) {
+        return null;
+      }
+      const tags = coerceTags(record.jobTags ?? record.jobLevels ?? []);
+      const unifiedSalary = numberFrom(record.unifiedZippiaSalary);
+      const remote =
+        tags.some((tag) => tag.toLowerCase().includes("remote")) ||
+        stringFrom(record.location)?.toLowerCase().includes("remote");
+      return {
+        externalId,
+        title,
+        company: stringFrom(record.companyName) ?? "Entreprise confidentielle",
+        location: stringFrom(record.location) ?? stringFrom(record.OBJcity),
+        description: stringFrom(record.jobDescription) ?? "",
+        category: stringFrom(record.OBJindustry) ?? tags[0],
+        tags,
+        remote: remote ? true : undefined,
+        salaryMin: unifiedSalary ?? null,
+        salaryMax: unifiedSalary ?? null,
+        publishedAt:
+          publishedAtFrom(record.postingDate) ??
+          publishedAtFrom(record.OBJpostingDate) ??
+          publishedAtFrom(record.postedDate),
+      };
+    },
+  }),
+  createJsonProvider({
+    id: "themuse",
+    label: "The Muse",
+    endpoint: optionalEnv("THEMUSE_API_URL") ?? "https://www.themuse.com/api/public/jobs",
+    defaultCategory: "operations",
+    query: {
+      page: 1,
+    },
+    itemsPath: ["results"],
+    mapItem: (record) => {
+      const externalId = stringFrom(record.id);
+      const title = stringFrom(record.name);
+      if (!externalId || !title) {
+        return null;
+      }
+      const categories = Array.isArray(record.categories)
+        ? (record.categories as RecordValue[]).map((category) => stringFrom(category.name)).filter((category): category is string => Boolean(category))
+        : [];
+      const levels = Array.isArray(record.levels)
+        ? (record.levels as RecordValue[]).map((level) => stringFrom(level.name)).filter((level): level is string => Boolean(level))
+        : [];
+      const locations = Array.isArray(record.locations)
+        ? (record.locations as RecordValue[]).map((location) => stringFrom(location.name)).filter((location): location is string => Boolean(location))
+        : [];
+      const tags = Array.from(new Set([...categories, ...levels])).slice(0, 8);
+      const locationLabel = locations.length > 0 ? locations.join(" · ") : undefined;
+      const remote = locations.some((location) => location.toLowerCase().includes("remote"));
+      const company = record.company as RecordValue | undefined;
+      return {
+        externalId,
+        title,
+        company: stringFrom(company?.name) ?? "Entreprise confidentielle",
+        location: locationLabel,
+        description: stringFrom(record.contents) ?? "",
+        category: categories[0],
+        tags,
+        remote: remote ? true : undefined,
+        publishedAt: publishedAtFrom(record.publication_date),
       };
     },
   }),
