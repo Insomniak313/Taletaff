@@ -4,14 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { JobFilters } from "@/features/jobs/components/JobFilters";
 import { JobList } from "@/features/jobs/components/JobList";
 import { jobCategories } from "@/config/jobCategories";
-import { jobProviderFilters, type JobProviderFilterOption } from "@/config/jobProviders";
+import { jobProviderFilters } from "@/config/jobProviders";
 import { useJobSearch } from "@/hooks/useJobSearch";
 import type { JobRecord } from "@/types/job";
-
-const PAGE_SIZE = 6;
-
-const computeJobsSignature = (jobs: ReadonlyArray<JobRecord>) =>
-  jobs.map((job) => job.id).join("|");
 
 interface JobSearchSectionProps {
   initialCategory?: string;
@@ -19,10 +14,12 @@ interface JobSearchSectionProps {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 40];
 const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
+const computeJobsSignature = (jobs: ReadonlyArray<JobRecord>) =>
+  jobs.map((job) => job.id).join("|");
 
 export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}) => {
-  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [page, setPage] = useState(1);
   const {
     category,
     setCategory,
@@ -46,30 +43,104 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
   } = useJobSearch({ initialCategory });
 
   const signature = useMemo(() => computeJobsSignature(jobs), [jobs]);
-  const [pageState, setPageState] = useState({ page: 1, signature });
 
-  const pageCount = useMemo(() => Math.max(Math.ceil(jobs.length / PAGE_SIZE), 1), [jobs.length]);
-
-  const requestedPage = pageState.signature === signature ? pageState.page : 1;
-  const page = Math.min(Math.max(requestedPage, 1), pageCount);
+  const pageCount = useMemo(
+    () => Math.max(Math.ceil(jobs.length / pageSize), 1),
+    [jobs.length, pageSize]
+  );
+  const safePage = Math.min(Math.max(page, 1), pageCount);
 
   const paginatedJobs = useMemo(() => {
-    const startIndex = (page - 1) * PAGE_SIZE;
-    return jobs.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [jobs, page]);
+    const startIndex = (safePage - 1) * pageSize;
+    return jobs.slice(startIndex, startIndex + pageSize);
+  }, [jobs, pageSize, safePage]);
 
-  const updatePage = useCallback(
-    (nextPage: number) => {
-      setPageState({
-        page: Math.min(Math.max(nextPage, 1), pageCount),
-        signature,
-      });
+  useEffect(() => {
+    setPage(1);
+  }, [signature, pageSize]);
+
+  const handleCategoryChange = useCallback(
+    (nextCategory?: string) => {
+      setCategory(nextCategory);
+      setPage(1);
     },
-    [pageCount, signature]
+    [setCategory]
   );
 
-  const goToPrevious = useCallback(() => updatePage(page - 1), [page, updatePage]);
-  const goToNext = useCallback(() => updatePage(page + 1), [page, updatePage]);
+  const handleProviderChange = useCallback(
+    (nextProvider?: JobRecord["source"]) => {
+      setProvider(nextProvider);
+      setPage(1);
+    },
+    [setProvider]
+  );
+
+  const handleQueryChange = useCallback(
+    (value: string) => {
+      setQuery(value);
+      setPage(1);
+    },
+    [setQuery]
+  );
+
+  const handleLocationChange = useCallback(
+    (value: string) => {
+      setLocation(value);
+      setPage(1);
+    },
+    [setLocation]
+  );
+
+  const handleRemoteToggle = useCallback(() => {
+    toggleRemoteFilter();
+    setPage(1);
+  }, [toggleRemoteFilter]);
+
+  const handleSalaryFloorChange = useCallback(
+    (value: number | null) => {
+      setSalaryFloor(value);
+      setPage(1);
+    },
+    [setSalaryFloor]
+  );
+
+  const handleTagToggle = useCallback(
+    (tag: string) => {
+      toggleTagFilter(tag);
+      setPage(1);
+    },
+    [toggleTagFilter]
+  );
+
+  const handleResetFilters = useCallback(() => {
+    resetFilters();
+    setPage(1);
+  }, [resetFilters]);
+
+  const handlePageChange = useCallback(
+    (nextPage: number) => {
+      setPage(Math.min(Math.max(nextPage, 1), pageCount));
+    },
+    [pageCount]
+  );
+
+  const handlePageSizeChange = useCallback(
+    (nextSize: number) => {
+      if (PAGE_SIZE_OPTIONS.includes(nextSize)) {
+        setPageSize(nextSize);
+      }
+    },
+    []
+  );
+
+  const goToPrevious = useCallback(() => handlePageChange(safePage - 1), [
+    handlePageChange,
+    safePage,
+  ]);
+  const goToNext = useCallback(() => handlePageChange(safePage + 1), [
+    handlePageChange,
+    safePage,
+  ]);
 
   return (
     <section className="space-y-6">
@@ -93,7 +164,7 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
         selectedTags={selectedTags}
         onTagToggle={handleTagToggle}
         onResetFilters={handleResetFilters}
-        page={page}
+        page={safePage}
         pageCount={pageCount}
         pageSize={pageSize}
         pageSizeOptions={PAGE_SIZE_OPTIONS}
@@ -105,23 +176,23 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
       {!isLoading && (
         <>
           <JobList jobs={paginatedJobs} />
-          {jobs.length > PAGE_SIZE && (
+          {jobs.length > pageSize && (
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-600">
               <button
                 type="button"
                 onClick={goToPrevious}
-                disabled={page === 1}
+                disabled={safePage === 1}
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 transition disabled:opacity-40"
               >
                 ← Précédent
               </button>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-                Page {page} / {pageCount}
+                Page {safePage} / {pageCount}
               </p>
               <button
                 type="button"
                 onClick={goToNext}
-                disabled={page === pageCount}
+                disabled={safePage === pageCount}
                 className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 font-semibold text-slate-700 transition disabled:opacity-40"
               >
                 Suivant →

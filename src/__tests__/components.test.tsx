@@ -119,6 +119,8 @@ describe("UI components", () => {
     const onTagToggle = vi.fn();
     const onResetFilters = vi.fn();
     const onProviderChange = vi.fn();
+    const onPageChange = vi.fn();
+    const onPageSizeChange = vi.fn();
     const summary = {
       count: 2,
       remoteShare: 0.5,
@@ -146,6 +148,12 @@ describe("UI components", () => {
       selectedTags: [],
       onTagToggle,
       onResetFilters,
+      page: 1,
+      pageCount: 1,
+      pageSize: 10,
+      pageSizeOptions: [10, 20],
+      onPageChange,
+      onPageSizeChange,
     };
     const { rerender } = render(<JobFilters {...currentProps} />);
     const rerenderWith = (overrides: Partial<JobFiltersPropsType> = {}) => {
@@ -214,6 +222,8 @@ describe("UI components", () => {
   it("ajoute les localisations et tags manquants aux suggestions", () => {
     const noop = vi.fn();
     const onSalaryFloorChange = vi.fn();
+    const onPageChange = vi.fn();
+    const onPageSizeChange = vi.fn();
     render(
       <JobFilters
         categories={jobCategories}
@@ -241,6 +251,12 @@ describe("UI components", () => {
         selectedTags={["Go"]}
         onTagToggle={noop}
         onResetFilters={noop}
+        page={1}
+        pageCount={1}
+        pageSize={10}
+        pageSizeOptions={[10, 20]}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
     );
     expect(screen.getByDisplayValue("Nantes")).toBeInTheDocument();

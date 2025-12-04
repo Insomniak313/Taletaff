@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JobSearchSection } from "@/features/jobs/components/JobSearchSection";
+import type { JobSearchSummary } from "@/types/job";
 
 const setCategory = vi.fn();
 const setProvider = vi.fn();
@@ -27,6 +28,14 @@ const buildJob = (index: number) => ({
   createdAt: new Date().toISOString(),
 });
 
+const buildSummary = (): JobSearchSummary => ({
+  count: 0,
+  remoteShare: 0,
+  salaryRange: { min: 0, max: 0 },
+  topLocations: [],
+  topTags: [],
+});
+
 const state = {
   category: "product",
   provider: undefined as string | undefined,
@@ -34,13 +43,7 @@ const state = {
   jobs: [] as ReturnType<typeof buildJob>[],
   isLoading: false,
   error: null as string | null,
-  summary: {
-    count: 0,
-    remoteShare: 0,
-    salaryRange: { min: 0, max: 0 },
-    topLocations: [],
-    topTags: [],
-  },
+  summary: buildSummary(),
   location: "",
   remoteOnly: false,
   salaryFloor: null as number | null,
@@ -67,13 +70,7 @@ describe("JobSearchSection", () => {
     state.jobs = [];
     state.isLoading = false;
     state.error = null;
-    state.summary = {
-      count: 0,
-      remoteShare: 0,
-      salaryRange: { min: 0, max: 0 },
-      topLocations: [],
-      topTags: [],
-    };
+    state.summary = buildSummary();
     state.location = "";
     state.remoteOnly = false;
     state.salaryFloor = null;
