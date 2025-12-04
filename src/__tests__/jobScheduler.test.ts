@@ -27,7 +27,16 @@ const PROVIDER_IDS: JobProviderId[] = [
   "monster-fr",
   "indeed-fr",
   "talent-io",
-  "remotive",
+  "arbeitnow",
+  "jobicy",
+  "remoteok",
+  "thehub",
+  "weworkremotely",
+  "hackernews-jobs",
+  "headhunter",
+  "torre",
+  "zippia",
+  "themuse",
 ] as const;
 
 const createJobCounts = (

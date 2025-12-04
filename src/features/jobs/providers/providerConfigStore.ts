@@ -29,7 +29,16 @@ const PROVIDER_ENV_KEYS: Record<JobProviderId, ProviderEnvKeys> = {
   "monster-fr": { endpoint: "MONSTER_FR_API_URL", token: "MONSTER_FR_API_KEY" },
   "indeed-fr": { endpoint: "INDEED_FR_API_URL", token: "INDEED_FR_API_TOKEN" },
   "talent-io": { endpoint: "TALENT_IO_API_URL", token: "TALENT_IO_API_TOKEN" },
-  remotive: { endpoint: "REMOTIVE_API_URL" },
+  arbeitnow: { endpoint: "ARBEITNOW_API_URL" },
+  jobicy: { endpoint: "JOBICY_API_URL" },
+  remoteok: { endpoint: "REMOTEOK_API_URL" },
+  thehub: { endpoint: "THEHUB_API_URL" },
+  weworkremotely: { endpoint: "WEWORKREMOTELY_API_URL" },
+  "hackernews-jobs": { endpoint: "HACKERNEWS_JOBS_API_URL" },
+  headhunter: { endpoint: "HEADHUNTER_API_URL" },
+  torre: { endpoint: "TORRE_API_URL" },
+  zippia: { endpoint: "ZIPPIA_API_URL" },
+  themuse: { endpoint: "THEMUSE_API_URL" },
 };
 
 const readEnvDefaults = (provider: JobProviderId): JobProviderSettings => {

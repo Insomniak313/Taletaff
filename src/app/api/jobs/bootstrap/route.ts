@@ -6,7 +6,7 @@ import type { SchedulerSummaryItem } from "@/features/jobs/scheduler/jobSchedule
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PUBLIC_PROVIDER_ID: JobProviderId = "remotive";
+const PUBLIC_PROVIDER_ID: JobProviderId = "arbeitnow";
 
 const formatSuccessPayload = (result: SchedulerSummaryItem) => ({
   provider: result.providerId,
@@ -14,7 +14,7 @@ const formatSuccessPayload = (result: SchedulerSummaryItem) => ({
   persisted: result.persisted ?? 0,
   message:
     (result.persisted ?? 0) > 0
-      ? "Offres synchronisées depuis Remotive"
+      ? "Offres synchronisées depuis notre provider public"
       : "Aucune nouvelle offre disponible",
 });
 
@@ -23,7 +23,7 @@ const formatErrorPayload = (result: SchedulerSummaryItem) => ({
   error: result.message ?? "Synchronisation impossible",
 });
 
-const triggerRemotiveSync = async () => {
+const triggerPublicSync = async () => {
   const result = await jobScheduler.runProvider(PUBLIC_PROVIDER_ID);
   if (result.status !== "success") {
     return NextResponse.json(formatErrorPayload(result), { status: 502 });
@@ -33,7 +33,7 @@ const triggerRemotiveSync = async () => {
 
 export async function POST() {
   try {
-    return await triggerRemotiveSync();
+    return await triggerPublicSync();
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erreur inconnue";
     return NextResponse.json({ error: message }, { status: 500 });
