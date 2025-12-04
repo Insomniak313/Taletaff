@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { JobRecord } from "@/types/job";
+import type { JobRecord, JobSearchSummary } from "@/types/job";
 
 interface UseJobSearchOptions {
   initialCategory?: string;
@@ -7,80 +7,181 @@ interface UseJobSearchOptions {
 
 interface JobSearchState {
   jobs: JobRecord[];
+  summary: JobSearchSummary;
   isLoading: boolean;
   error: string | null;
 }
 
+interface ClientFilters {
+  category?: string;
+  query: string;
+  location: string;
+  remoteOnly: boolean;
+  salaryFloor: number | null;
+  selectedTags: string[];
+}
+
+const INITIAL_SUMMARY: JobSearchSummary = {
+  count: 0,
+  remoteShare: 0,
+  salaryRange: { min: 0, max: 0 },
+  topLocations: [],
+  topTags: [],
+};
+
+const useDebouncedValue = <T,>(value: T, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedValue(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
-  const [category, setCategory] = useState(initialCategory);
-  const [query, setQuery] = useState("");
-  const [{ jobs, isLoading, error }, setState] = useState<JobSearchState>({
+  const [filters, setFilters] = useState<ClientFilters>({
+    category: initialCategory,
+    query: "",
+    location: "",
+    remoteOnly: false,
+    salaryFloor: null,
+    selectedTags: [],
+  });
+  const debouncedQuery = useDebouncedValue(filters.query, 350);
+  const effectiveFilters = useMemo(
+    () => ({ ...filters, query: debouncedQuery }),
+    [filters, debouncedQuery]
+  );
+
+  const [{ jobs, summary, isLoading, error }, setState] = useState<JobSearchState>({
     jobs: [],
+    summary: INITIAL_SUMMARY,
     isLoading: false,
     error: null,
   });
   const controllerRef = useRef<AbortController>(new AbortController());
 
-  const fetchJobs = useCallback(
-    async (searchParams?: { category?: string; query?: string }) => {
-      setState((prev) => ({ ...prev, isLoading: true }));
-      controllerRef.current.abort();
-      const controller = new AbortController();
-      controllerRef.current = controller;
+  const runSearch = useCallback(async (nextFilters: ClientFilters) => {
+    setState((prev) => ({ ...prev, isLoading: true }));
+    controllerRef.current.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
 
-      try {
-        const params = new URLSearchParams();
-        const selectedCategory = searchParams?.category ?? category;
-        const searchQuery = searchParams?.query ?? query;
+    try {
+      const params = new URLSearchParams();
 
-        if (selectedCategory) params.set("category", selectedCategory);
-        if (searchQuery) params.set("query", searchQuery);
-
-        const response = await fetch(`/api/jobs?${params.toString()}`, {
-          signal: controller.signal,
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error ?? "Impossible de charger les offres.");
-        }
-
-        setState({ jobs: data.jobs, isLoading: false, error: null });
-      } catch (err) {
-        if ((err as Error).name === "AbortError") {
-          setState((prev) => ({ ...prev, isLoading: false }));
-          return;
-        }
-        setState({
-          jobs: [],
-          isLoading: false,
-          error:
-            err instanceof Error ? err.message : "Une erreur inattendue est survenue.",
-        });
+      if (nextFilters.category) params.set("category", nextFilters.category);
+      if (nextFilters.query) params.set("query", nextFilters.query);
+      if (nextFilters.location) params.set("location", nextFilters.location);
+      if (nextFilters.remoteOnly) params.set("remote", "true");
+      if (nextFilters.salaryFloor !== null)
+        params.set("minSalary", String(nextFilters.salaryFloor));
+      if (nextFilters.selectedTags.length) {
+        params.set("tags", nextFilters.selectedTags.join(","));
       }
-    },
-    [category, query]
-  );
+
+      const response = await fetch(`/api/jobs?${params.toString()}`, {
+        signal: controller.signal,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Impossible de charger les offres.");
+      }
+
+      setState({
+        jobs: data.jobs as JobRecord[],
+        summary: (data.summary as JobSearchSummary) ?? INITIAL_SUMMARY,
+        isLoading: false,
+        error: null,
+      });
+    } catch (err) {
+      if ((err as Error).name === "AbortError") {
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return;
+      }
+      setState({
+        jobs: [],
+        summary: INITIAL_SUMMARY,
+        isLoading: false,
+        error:
+          err instanceof Error ? err.message : "Une erreur inattendue est survenue.",
+      });
+    }
+  }, []);
 
   useEffect(() => {
-    fetchJobs();
+    runSearch(effectiveFilters);
     return () => controllerRef.current.abort();
-  }, [fetchJobs]);
+  }, [effectiveFilters, runSearch]);
 
-  const summary = useMemo(
-    () => ({ count: jobs.length, hasError: Boolean(error) }),
-    [jobs.length, error]
+  const setCategory = useCallback((value: string) => {
+    setFilters((prev) => ({ ...prev, category: value }));
+  }, []);
+
+  const setQuery = useCallback((value: string) => {
+    setFilters((prev) => ({ ...prev, query: value }));
+  }, []);
+
+  const setLocation = useCallback((value: string) => {
+    setFilters((prev) => ({ ...prev, location: value }));
+  }, []);
+
+  const toggleRemoteOnly = useCallback(() => {
+    setFilters((prev) => ({ ...prev, remoteOnly: !prev.remoteOnly }));
+  }, []);
+
+  const setSalaryFloor = useCallback((value: number | null) => {
+    setFilters((prev) => ({ ...prev, salaryFloor: value }));
+  }, []);
+
+  const toggleTag = useCallback((tag: string) => {
+    setFilters((prev) => {
+      const exists = prev.selectedTags.includes(tag);
+      const nextTags = exists
+        ? prev.selectedTags.filter((current) => current !== tag)
+        : [...prev.selectedTags, tag];
+      return { ...prev, selectedTags: nextTags };
+    });
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      query: "",
+      location: "",
+      remoteOnly: false,
+      salaryFloor: null,
+      selectedTags: [],
+    }));
+  }, []);
+
+  const fetchJobs = useCallback(
+    (override?: Partial<ClientFilters>) =>
+      runSearch({ ...effectiveFilters, ...override }),
+    [effectiveFilters, runSearch]
   );
 
   return {
-    category,
+    category: filters.category,
     setCategory,
-    query,
+    query: filters.query,
     setQuery,
+    location: filters.location,
+    setLocation,
+    remoteOnly: filters.remoteOnly,
+    toggleRemoteOnly,
+    salaryFloor: filters.salaryFloor,
+    setSalaryFloor,
+    selectedTags: filters.selectedTags,
+    toggleTag,
+    resetFilters,
     jobs,
+    summary,
     isLoading,
     error,
-    summary,
     fetchJobs,
   };
 };

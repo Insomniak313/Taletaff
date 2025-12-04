@@ -1,5 +1,10 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
-import type { JobFilters, JobRecord } from "@/types/job";
+import {
+  buildJobSearchSummary,
+  buildQueryTokens,
+  scoreByRelevance,
+} from "@/features/jobs/search/searchUtils";
+import type { JobFilters, JobRecord, JobSearchResult } from "@/types/job";
 
 const TABLE_NAME = "jobs";
 
@@ -21,7 +26,7 @@ const mapRecord = (record: Record<string, unknown>): JobRecord => ({
 });
 
 export const jobService = {
-  async searchJobs(filters: JobFilters = {}): Promise<JobRecord[]> {
+  async searchJobs(filters: JobFilters = {}): Promise<JobSearchResult> {
     const client = supabaseAdmin();
     let query = client.from(TABLE_NAME).select("*").order("created_at", {
       ascending: false,
@@ -31,9 +36,35 @@ export const jobService = {
       query = query.eq("category", filters.category);
     }
 
+    if (filters.location) {
+      query = query.ilike("location", `%${filters.location}%`);
+    }
+
+    if (filters.remoteOnly) {
+      query = query.eq("remote", true);
+    }
+
+    if (typeof filters.minSalary === "number") {
+      query = query.gte("salary_min", filters.minSalary);
+    }
+
+    if (typeof filters.maxSalary === "number") {
+      query = query.lte("salary_max", filters.maxSalary);
+    }
+
+    if (filters.tags?.length) {
+      query = query.contains("tags", filters.tags);
+    }
+
     if (filters.query) {
+      const sanitizedQuery = filters.query.replace(/,/g, "\\,");
       query = query.or(
-        `title.ilike.%${filters.query}%,company.ilike.%${filters.query}%`
+        [
+          `title.ilike.%${sanitizedQuery}%`,
+          `company.ilike.%${sanitizedQuery}%`,
+          `location.ilike.%${sanitizedQuery}%`,
+          `description.ilike.%${sanitizedQuery}%`,
+        ].join(",")
       );
     }
 
@@ -47,6 +78,11 @@ export const jobService = {
       throw new Error(error.message);
     }
 
-    return (data ?? []).map(mapRecord);
+    const jobs = (data ?? []).map(mapRecord);
+    const tokens = buildQueryTokens(filters.query);
+    const orderedJobs = scoreByRelevance(jobs, tokens);
+    const summary = buildJobSearchSummary(orderedJobs);
+
+    return { jobs: orderedJobs, summary };
   },
 };

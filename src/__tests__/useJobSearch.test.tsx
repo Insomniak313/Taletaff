@@ -18,6 +18,14 @@ const mockJobs = [
   },
 ];
 
+const mockSummary = {
+  count: 1,
+  remoteShare: 1,
+  salaryRange: { min: 90000, max: 120000 },
+  topLocations: [{ label: "Paris", count: 1 }],
+  topTags: [{ label: "TypeScript", count: 1 }],
+};
+
 describe("useJobSearch", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -28,15 +36,16 @@ describe("useJobSearch", () => {
   });
 
   it("récupère les offres et expose un résumé", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValueOnce({
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
-      json: async () => ({ jobs: mockJobs }),
+      json: async () => ({ jobs: mockJobs, summary: mockSummary }),
     } as Response);
 
     const { result } = renderHook(() => useJobSearch({ initialCategory: "engineering" }));
 
     await waitFor(() => expect(result.current.jobs).toHaveLength(1));
     expect(result.current.summary.count).toBe(1);
+    expect(result.current.summary.topTags[0].label).toBe("TypeScript");
   });
 
   it("gère les erreurs serveur", async () => {
@@ -63,10 +72,22 @@ describe("useJobSearch", () => {
     );
   });
 
-  it("met à jour la catégorie", async () => {
+  it("retombe sur un résumé par défaut si l'API ne renvoie rien", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({ jobs: mockJobs }),
+    } as Response);
+
+    const { result } = renderHook(() => useJobSearch({}));
+
+    await waitFor(() => expect(result.current.summary.count).toBe(0));
+    expect(result.current.summary.remoteShare).toBe(0);
+  });
+
+  it("met à jour la catégorie", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ jobs: mockJobs, summary: mockSummary }),
     } as Response);
 
     const { result } = renderHook(() => useJobSearch({ initialCategory: "product" }));
@@ -79,14 +100,61 @@ describe("useJobSearch", () => {
       await result.current.fetchJobs({ query: "staff" });
     });
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("category=engineering"),
-      expect.anything()
-    );
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("query=staff"),
-      expect.anything()
-    );
+    const calledUrls = fetchSpy.mock.calls.map((call) => call[0] as string);
+    expect(calledUrls.some((url) => url.includes("category=engineering"))).toBe(true);
+    expect(calledUrls.some((url) => url.includes("query=staff"))).toBe(true);
+  });
+
+  it("applique les filtres avancés", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ jobs: mockJobs, summary: mockSummary }),
+    } as Response);
+
+    const { result } = renderHook(() => useJobSearch({ initialCategory: "engineering" }));
+
+    await waitFor(() => expect(result.current.jobs).toHaveLength(1));
+
+    await act(async () => {
+      result.current.setLocation("Paris");
+      result.current.toggleRemoteOnly();
+      result.current.setSalaryFloor(80000);
+      result.current.toggleTag("TypeScript");
+      await result.current.fetchJobs();
+    });
+
+    const lastCall = (fetchSpy.mock.calls.at(-1)?.[0] as string) ?? "";
+    expect(lastCall).toContain("remote=true");
+    expect(lastCall).toContain("location=Paris");
+    expect(lastCall).toContain("minSalary=80000");
+    expect(lastCall).toContain("tags=TypeScript");
+  });
+
+  it("réinitialise les filtres étendus", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ jobs: mockJobs, summary: mockSummary }),
+    } as Response);
+
+    const { result } = renderHook(() => useJobSearch({ initialCategory: "engineering" }));
+
+    await waitFor(() => expect(result.current.jobs).toHaveLength(1));
+
+    await act(async () => {
+      result.current.setQuery("remote");
+      result.current.toggleTag("Remote");
+      result.current.toggleTag("Remote");
+      result.current.setLocation("Paris");
+      result.current.toggleRemoteOnly();
+      result.current.setSalaryFloor(75000);
+      result.current.resetFilters();
+    });
+
+    expect(result.current.query).toBe("");
+    expect(result.current.location).toBe("");
+    expect(result.current.remoteOnly).toBe(false);
+    expect(result.current.salaryFloor).toBeNull();
+    expect(result.current.selectedTags).toEqual([]);
   });
 
   it("ignore les AbortError", async () => {

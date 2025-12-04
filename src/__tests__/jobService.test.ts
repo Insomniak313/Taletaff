@@ -6,6 +6,10 @@ const queryBuilder = {
   select: vi.fn().mockReturnThis(),
   order: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
+  ilike: vi.fn().mockReturnThis(),
+  gte: vi.fn().mockReturnThis(),
+  lte: vi.fn().mockReturnThis(),
+  contains: vi.fn().mockReturnThis(),
   or: vi.fn().mockReturnThis(),
   limit: vi.fn().mockReturnThis(),
   then: (resolve: (value: QueryResponse) => void) => resolve({ data: [], error: null }),
@@ -45,22 +49,40 @@ describe("jobService", () => {
     };
     fromMock.mockClear();
     queryBuilder.eq.mockClear();
+    queryBuilder.ilike.mockClear();
+    queryBuilder.gte.mockClear();
+    queryBuilder.lte.mockClear();
+    queryBuilder.contains.mockClear();
     queryBuilder.or.mockClear();
     queryBuilder.limit.mockClear();
   });
 
-  it("retourne les offres formatées", async () => {
-    const jobs = await jobService.searchJobs();
-    expect(jobs[0]).toMatchObject({
+  it("retourne les offres formatées et un résumé", async () => {
+    const result = await jobService.searchJobs();
+    expect(result.jobs[0]).toMatchObject({
       company: "Taletaff",
       salaryMin: 60000,
       salaryMax: 80000,
     });
+    expect(result.summary.count).toBe(1);
   });
 
-  it("applique les filtres de catégorie et recherche", async () => {
-    await jobService.searchJobs({ category: "product", query: "PM" });
+  it("applique les filtres de catégorie et recherche avancée", async () => {
+    await jobService.searchJobs({
+      category: "product",
+      query: "PM",
+      location: "Paris",
+      remoteOnly: true,
+      minSalary: 50000,
+      maxSalary: 90000,
+      tags: ["Product"],
+    });
     expect(queryBuilder.eq).toHaveBeenCalledWith("category", "product");
+    expect(queryBuilder.ilike).toHaveBeenCalledWith("location", "%Paris%");
+    expect(queryBuilder.eq).toHaveBeenCalledWith("remote", true);
+    expect(queryBuilder.gte).toHaveBeenCalledWith("salary_min", 50000);
+    expect(queryBuilder.lte).toHaveBeenCalledWith("salary_max", 90000);
+    expect(queryBuilder.contains).toHaveBeenCalledWith("tags", ["Product"]);
     expect(queryBuilder.or).toHaveBeenCalled();
   });
 
@@ -83,8 +105,8 @@ describe("jobService", () => {
       ],
       error: null,
     };
-    const jobs = await jobService.searchJobs();
-    expect(jobs[0]).toMatchObject({
+    const result = await jobService.searchJobs();
+    expect(result.jobs[0]).toMatchObject({
       title: "",
       tags: [],
       salaryMin: 0,
@@ -93,8 +115,9 @@ describe("jobService", () => {
 
   it("retourne un tableau vide quand aucun résultat", async () => {
     mockData = { data: null, error: null };
-    const jobs = await jobService.searchJobs();
-    expect(jobs).toEqual([]);
+    const result = await jobService.searchJobs();
+    expect(result.jobs).toEqual([]);
+    expect(result.summary.count).toBe(0);
   });
 
   it("mappe les champs optionnels liés à la source", async () => {
@@ -110,8 +133,8 @@ describe("jobService", () => {
       ],
       error: null,
     };
-    const jobs = await jobService.searchJobs();
-    expect(jobs[0]).toMatchObject({
+    const result = await jobService.searchJobs();
+    expect(result.jobs[0]).toMatchObject({
       source: "apec",
       externalId: "ext-123",
       fetchedAt,
