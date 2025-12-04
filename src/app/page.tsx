@@ -9,14 +9,10 @@ import { ProjectModules } from "@/components/sections/ProjectModules";
 import { CategoryGrid } from "@/features/jobs/components/CategoryGrid";
 import { jobCategories } from "@/config/jobCategories";
 
-const DataPulse = dynamic(
-  () => import("@/components/sections/DataPulse").then((mod) => mod.DataPulse),
-  { ssr: false, suspense: true }
-);
+const DataPulse = dynamic(() => import("@/components/sections/DataPulse").then((mod) => mod.DataPulse));
 
 const AutomationPlayground = dynamic(
-  () => import("@/components/sections/AutomationPlayground").then((mod) => mod.AutomationPlayground),
-  { ssr: false, suspense: true }
+  () => import("@/components/sections/AutomationPlayground").then((mod) => mod.AutomationPlayground)
 );
 
 const SectionPlaceholder = ({ title }: { title: string }) => (
