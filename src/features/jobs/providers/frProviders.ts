@@ -1,4 +1,4 @@
-import type { JobProvider, JobProviderSettings } from "@/features/jobs/providers/types";
+import type { JobProvider, JobProviderSettings, JobProviderId } from "@/features/jobs/providers/types";
 import {
   booleanFrom,
   coerceTags,
@@ -8,6 +8,7 @@ import {
   publishedAtFrom,
   stringFrom,
 } from "@/features/jobs/providers/providerFactory";
+import { getProviderMeta } from "@/features/jobs/providers/providerCatalog";
 
 type RecordValue = Record<string, unknown>;
 
@@ -186,13 +187,31 @@ const bearerHeaders =
     return token ? { Authorization: `Bearer ${token}` } : undefined;
   };
 
+const jsonMeta = (id: JobProviderId) => {
+  const meta = getProviderMeta(id);
+  if (meta.kind !== "json") {
+    throw new Error(`Le provider ${id} n'est pas défini comme source JSON`);
+  }
+  return meta;
+};
+
+const buildJsonProvider = (
+  id: JobProviderId,
+  definition: Omit<Parameters<typeof createJsonProvider>[0], "id" | "label" | "defaultCategory" | "language">
+) => {
+  const meta = jsonMeta(id);
+  return createJsonProvider({
+    id: meta.id,
+    label: meta.label,
+    defaultCategory: meta.defaultCategory,
+    language: meta.language,
+    ...definition,
+  });
+};
+
 const frJobProviders: JobProvider[] = [
-  createJsonProvider({
-    id: "france-travail",
-    label: "France Travail (ex Pôle emploi)",
-    language: "fr",
+  buildJsonProvider("france-travail", {
     endpoint: optionalEnv("FRANCE_TRAVAIL_API_URL"),
-    defaultCategory: "engineering",
     itemsPath: ["resultats"],
     maxBatchSize: 200,
     pagination: { mode: "page", maxPages: 10 },
@@ -220,12 +239,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["dateActualisation", "publishedAt"],
       }),
   }),
-  createJsonProvider({
-    id: "apec",
-    label: "APEC",
-    language: "fr",
+  buildJsonProvider("apec", {
     endpoint: optionalEnv("APEC_API_URL"),
-    defaultCategory: "operations",
     itemsPath: ["offers"],
     headers: bearerHeaders("APEC_API_TOKEN"),
     mapItem: (record) =>
@@ -243,12 +258,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["publicationDate"],
       }),
   }),
-  createJsonProvider({
-    id: "meteojob",
-    label: "Meteojob",
-    language: "fr",
+  buildJsonProvider("meteojob", {
     endpoint: optionalEnv("METEOJOB_API_URL"),
-    defaultCategory: "marketing",
     itemsPath: ["data", "jobs"],
     headers: bearerHeaders("METEOJOB_API_KEY"),
     mapItem: (record) =>
@@ -266,12 +277,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["publishedAt"],
       }),
   }),
-  createJsonProvider({
-    id: "hellowork",
-    label: "HelloWork / RegionsJob",
-    language: "fr",
+  buildJsonProvider("hellowork", {
     endpoint: optionalEnv("HELLOWORK_API_URL"),
-    defaultCategory: "engineering",
     itemsPath: ["jobs"],
     headers: bearerHeaders("HELLOWORK_API_KEY"),
     mapItem: (record) =>
@@ -289,12 +296,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["publishedAt"],
       }),
   }),
-  createJsonProvider({
-    id: "welcometothejungle",
-    label: "Welcome to the Jungle",
-    language: "fr",
+  buildJsonProvider("welcometothejungle", {
     endpoint: optionalEnv("WTTJ_API_URL"),
-    defaultCategory: "product",
     itemsPath: ["offers"],
     headers: bearerHeaders("WTTJ_API_TOKEN"),
     mapItem: (record) =>
@@ -312,12 +315,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["publishedAt"],
       }),
   }),
-  createJsonProvider({
-    id: "jobteaser",
-    label: "JobTeaser",
-    language: "fr",
+  buildJsonProvider("jobteaser", {
     endpoint: optionalEnv("JOBTEASER_API_URL"),
-    defaultCategory: "marketing",
     itemsPath: ["results"],
     headers: bearerHeaders("JOBTEASER_API_TOKEN"),
     mapItem: (record) =>
@@ -335,12 +334,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["publishedAt"],
       }),
   }),
-  createJsonProvider({
-    id: "chooseyourboss",
-    label: "ChooseYourBoss",
-    language: "fr",
+  buildJsonProvider("chooseyourboss", {
     endpoint: optionalEnv("CHOOSEYOURBOSS_API_URL"),
-    defaultCategory: "engineering",
     itemsPath: ["jobs"],
     headers: bearerHeaders("CHOOSEYOURBOSS_API_KEY"),
     mapItem: (record) =>
@@ -358,12 +353,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["publishedAt"],
       }),
   }),
-  createJsonProvider({
-    id: "monster-fr",
-    label: "Monster France",
-    language: "fr",
+  buildJsonProvider("monster-fr", {
     endpoint: optionalEnv("MONSTER_FR_API_URL"),
-    defaultCategory: "operations",
     itemsPath: ["jobList"],
     headers: bearerHeaders("MONSTER_FR_API_KEY"),
     mapItem: (record) =>
@@ -381,12 +372,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["datePosted"],
       }),
   }),
-  createJsonProvider({
-    id: "indeed-fr",
-    label: "Indeed France",
-    language: "fr",
+  buildJsonProvider("indeed-fr", {
     endpoint: optionalEnv("INDEED_FR_API_URL"),
-    defaultCategory: "marketing",
     itemsPath: ["results"],
     headers: bearerHeaders("INDEED_FR_API_TOKEN"),
     mapItem: (record) =>
@@ -404,12 +391,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["date"],
       }),
   }),
-  createJsonProvider({
-    id: "talent-io",
-    label: "talent.io",
-    language: "fr",
+  buildJsonProvider("talent-io", {
     endpoint: optionalEnv("TALENT_IO_API_URL"),
-    defaultCategory: "engineering",
     itemsPath: ["jobs"],
     headers: bearerHeaders("TALENT_IO_API_TOKEN"),
     mapItem: (record) =>
@@ -427,12 +410,8 @@ const frJobProviders: JobProvider[] = [
         publishedAtKeys: ["publishedAt"],
       }),
   }),
-  createJsonProvider({
-    id: "arbeitnow",
-    label: "Arbeitnow",
-    language: "de",
+  buildJsonProvider("arbeitnow", {
     endpoint: optionalEnv("ARBEITNOW_API_URL") ?? "https://www.arbeitnow.com/api/job-board-api",
-    defaultCategory: "engineering",
     itemsPath: ["data", "jobs"],
     maxBatchSize: 100,
     pagination: { mode: "page", maxPages: 10 },
@@ -468,12 +447,8 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "jobicy",
-    label: "Jobicy",
-    language: "en",
+  buildJsonProvider("jobicy", {
     endpoint: optionalEnv("JOBICY_API_URL") ?? "https://jobicy.com/api/v2/remote-jobs",
-    defaultCategory: "operations",
     itemsPath: ["jobs"],
     mapItem: (record) => {
       const externalId = stringFrom(record.jobSlug) ?? stringFrom(record.id);
@@ -500,12 +475,8 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "remoteok",
-    label: "RemoteOK",
-    language: "en",
+  buildJsonProvider("remoteok", {
     endpoint: optionalEnv("REMOTEOK_API_URL") ?? "https://remoteok.com/api",
-    defaultCategory: "engineering",
     mapItem: (record) => {
       const externalId = stringFrom(record.id) ?? stringFrom(record.slug);
       const title = stringFrom(record.position) ?? stringFrom(record.title);
@@ -531,12 +502,8 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "thehub",
-    label: "The Hub",
-    language: "en",
+  buildJsonProvider("thehub", {
     endpoint: optionalEnv("THEHUB_API_URL") ?? "https://thehub.io/api/jobs",
-    defaultCategory: "product",
     itemsPath: ["docs"],
     mapItem: (record) => {
       const externalId = stringFrom(record.id);
@@ -568,12 +535,8 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "weworkremotely",
-    label: "We Work Remotely (RSS)",
-    language: "en",
+  buildJsonProvider("weworkremotely", {
     endpoint: optionalEnv("WEWORKREMOTELY_API_URL") ?? "https://api.rss2json.com/v1/api.json",
-    defaultCategory: "engineering",
     itemsPath: ["items"],
     query: {
       rss_url: "https://weworkremotely.com/categories/remote-programming-jobs.rss",
@@ -600,14 +563,10 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "hackernews-jobs",
-    label: "Hacker News Jobs",
-    language: "en",
+  buildJsonProvider("hackernews-jobs", {
     endpoint:
       optionalEnv("HACKERNEWS_JOBS_API_URL") ??
       "https://hn.algolia.com/api/v1/search_by_date",
-    defaultCategory: "engineering",
     query: {
       tags: "story,job",
     },
@@ -636,12 +595,8 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "headhunter",
-    label: "HeadHunter",
-    language: "ru",
+  buildJsonProvider("headhunter", {
     endpoint: optionalEnv("HEADHUNTER_API_URL") ?? "https://api.hh.ru/vacancies",
-    defaultCategory: "operations",
     maxBatchSize: 100,
     pagination: { mode: "page", startPage: 0, maxPages: 10 },
     query: {
@@ -697,12 +652,8 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "torre",
-    label: "Torre",
-    language: "es",
+  buildJsonProvider("torre", {
     endpoint: optionalEnv("TORRE_API_URL") ?? "https://search.torre.co/opportunities/_search/",
-    defaultCategory: "product",
     method: "POST",
     maxBatchSize: 50,
     pagination: { mode: "page", startPage: 0, maxPages: 10 },
@@ -753,12 +704,8 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "zippia",
-    label: "Zippia",
-    language: "en",
+  buildJsonProvider("zippia", {
     endpoint: optionalEnv("ZIPPIA_API_URL") ?? "https://www.zippia.com/api/jobs/",
-    defaultCategory: "engineering",
     method: "POST",
     headers: () => ({
       "user-agent": "Mozilla/5.0",
@@ -802,12 +749,8 @@ const frJobProviders: JobProvider[] = [
       };
     },
   }),
-  createJsonProvider({
-    id: "themuse",
-    label: "The Muse",
-    language: "en",
+  buildJsonProvider("themuse", {
     endpoint: optionalEnv("THEMUSE_API_URL") ?? "https://www.themuse.com/api/public/jobs",
-    defaultCategory: "operations",
     maxBatchSize: 20,
     pagination: { mode: "page", maxPages: 10 },
     buildQuery: (context) => {

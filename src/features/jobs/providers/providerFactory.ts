@@ -161,8 +161,6 @@ const sanitizeWebhookJob = (
     return null;
   }
 
-  const languageValue = stringFrom(record.language);
-
   return {
     externalId,
     title,
@@ -175,8 +173,7 @@ const sanitizeWebhookJob = (
     salaryMin: numberFrom(record.salaryMin ?? record.salary_min) ?? null,
     salaryMax: numberFrom(record.salaryMax ?? record.salary_max) ?? null,
     publishedAt: publishedAtFrom(record.publishedAt ?? record.published_at),
-    language:
-      (languageValue && (languageValue as JobProviderLanguage)) ?? fallback.language,
+    language: fallback.language,
   };
 };
 

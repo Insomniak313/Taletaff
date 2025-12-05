@@ -9,6 +9,7 @@ interface ScraperStatusPanelProps {
   onRun: (providerId: JobProviderId) => Promise<void>;
   onSaveConfig: (providerId: JobProviderId, payload: { endpoint?: string; authToken?: string }) => Promise<void>;
   isLoading: boolean;
+  onRunAll: () => Promise<void>;
 }
 
 type FormState = Record<JobProviderId, { endpoint: string; authToken: string }>;
@@ -33,11 +34,19 @@ const formatDate = (value: string | null) => {
   }).format(new Date(value));
 };
 
-export const ScraperStatusPanel = ({ items, onRun, onSaveConfig, isLoading }: ScraperStatusPanelProps) => {
+export const ScraperStatusPanel = ({
+  items,
+  onRun,
+  onSaveConfig,
+  onRunAll,
+  isLoading,
+}: ScraperStatusPanelProps) => {
   const [formValues, setFormValues] = useState<FormState>({} as FormState);
   const [saving, setSaving] = useState<Record<JobProviderId, boolean>>({} as Record<JobProviderId, boolean>);
   const [running, setRunning] = useState<Record<JobProviderId, boolean>>({} as Record<JobProviderId, boolean>);
   const [feedback, setFeedback] = useState<Record<JobProviderId, string | null>>({} as Record<JobProviderId, string | null>);
+  const [runningAll, setRunningAll] = useState(false);
+  const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const next: FormState = {} as FormState;
@@ -107,6 +116,19 @@ export const ScraperStatusPanel = ({ items, onRun, onSaveConfig, isLoading }: Sc
     }
   };
 
+  const handleRunAll = async () => {
+    setRunningAll(true);
+    setBulkFeedback(null);
+    try {
+      await onRunAll();
+      setBulkFeedback("Tous les scrapers configurés ont été relancés.");
+    } catch (error) {
+      setBulkFeedback(error instanceof Error ? error.message : "Échec de la relance globale");
+    } finally {
+      setRunningAll(false);
+    }
+  };
+
   return (
     <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -115,7 +137,16 @@ export const ScraperStatusPanel = ({ items, onRun, onSaveConfig, isLoading }: Sc
           <p className="text-xs text-slate-500">
             {isLoading ? "Chargement en cours..." : `${items.length} connecteurs configurés`}
           </p>
+          {bulkFeedback && <p className="text-xs text-slate-500">{bulkFeedback}</p>}
         </div>
+        <button
+          type="button"
+          onClick={() => void handleRunAll()}
+          disabled={runningAll}
+          className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {runningAll ? "Relance globale..." : "Lancer tous les providers"}
+        </button>
       </header>
       <div className="overflow-x-auto">
         <table className="min-w-[1080px] w-full text-sm">
