@@ -41,6 +41,7 @@ export async function GET(request: Request) {
       return {
         providerId: provider.id,
         label: provider.label,
+        language: provider.language,
         status: run?.status ?? "idle",
         lastRunAt: run?.last_run_at ?? null,
         lastSuccessAt: run?.last_success_at ?? null,

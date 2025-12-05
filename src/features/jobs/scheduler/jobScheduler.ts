@@ -141,6 +141,44 @@ const summarizeProviderState = (
   return { providerId: provider.id, status: "skipped" };
 };
 
+const runProviderOnce = async (
+  provider: JobProvider,
+  settings: JobProviderSettings | undefined,
+  client: JobsClient
+): Promise<SchedulerSummaryItem> => {
+  await upsertRunRow(client, provider.id, {
+    status: "running",
+    last_run_at: new Date().toISOString(),
+    error: null,
+  });
+
+  try {
+    const result = await scrapeProvider(provider, settings, client);
+    await upsertRunRow(client, provider.id, {
+      status: "success",
+      last_success_at: new Date().toISOString(),
+      error: null,
+    });
+    return {
+      providerId: provider.id,
+      status: "success",
+      fetched: result.fetched,
+      persisted: result.persisted,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erreur scraper";
+    await upsertRunRow(client, provider.id, {
+      status: "failed",
+      error: message,
+    });
+    return {
+      providerId: provider.id,
+      status: "error",
+      message,
+    };
+  }
+};
+
 export const jobScheduler = {
   JOB_REFRESH_INTERVAL_MS,
   determineDueProviders,
@@ -168,37 +206,7 @@ export const jobScheduler = {
 
     for (const provider of dueProviders) {
       const providerSettings = settingsMap[provider.id];
-      await upsertRunRow(client, provider.id, {
-        status: "running",
-        last_run_at: new Date().toISOString(),
-        error: null,
-      });
-
-      try {
-        const result = await scrapeProvider(provider, providerSettings, client);
-        await upsertRunRow(client, provider.id, {
-          status: "success",
-          last_success_at: new Date().toISOString(),
-          error: null,
-        });
-        items.push({
-          providerId: provider.id,
-          status: "success",
-          fetched: result.fetched,
-          persisted: result.persisted,
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Erreur scraper";
-        await upsertRunRow(client, provider.id, {
-          status: "failed",
-          error: message,
-        });
-        items.push({
-          providerId: provider.id,
-          status: "error",
-          message,
-        });
-      }
+      items.push(await runProviderOnce(provider, providerSettings, client));
     }
 
     const flattened = providers.map((provider) => {
@@ -225,36 +233,27 @@ export const jobScheduler = {
       throw new Error(`Le provider ${provider.label} n'est pas configuré`);
     }
 
-    await upsertRunRow(client, providerId, {
-      status: "running",
-      last_run_at: new Date().toISOString(),
-      error: null,
-    });
+    return runProviderOnce(provider, settings, client);
+  },
+  async runAllProviders(): Promise<SchedulerSummary> {
+    const client = supabaseAdmin();
+    const [settingsMap] = await Promise.all([providerConfigStore.fetchSettingsMap(client)]);
+    const triggeredAt = new Date();
+    const items: SchedulerSummaryItem[] = [];
 
-    try {
-      const result = await scrapeProvider(provider, settings, client);
-      await upsertRunRow(client, providerId, {
-        status: "success",
-        last_success_at: new Date().toISOString(),
-        error: null,
-      });
-      return {
-        providerId,
-        status: "success",
-        fetched: result.fetched,
-        persisted: result.persisted,
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Erreur scraper";
-      await upsertRunRow(client, providerId, {
-        status: "failed",
-        error: message,
-      });
-      return {
-        providerId,
-        status: "error",
-        message,
-      };
+    for (const provider of JOB_PROVIDERS) {
+      const settings = settingsMap[provider.id];
+      if (!provider.isConfigured(settings)) {
+        items.push({ providerId: provider.id, status: "disabled" });
+        continue;
+      }
+      items.push(await runProviderOnce(provider, settings, client));
     }
+
+    return {
+      triggeredAt: triggeredAt.toISOString(),
+      dueProviders: JOB_PROVIDERS.map((provider) => provider.id),
+      items,
+    };
   },
 };

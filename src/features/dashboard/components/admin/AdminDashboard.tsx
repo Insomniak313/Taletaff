@@ -89,6 +89,13 @@ export const AdminDashboard = () => {
     [authorizedFetch, loadData]
   );
 
+  const handleRunAllScrapers = useCallback(async () => {
+    await authorizedFetch(`/api/admin/scrapers/run/all`, {
+      method: "POST",
+    });
+    await loadData();
+  }, [authorizedFetch, loadData]);
+
   return (
     <DashboardShell
       title="Console administrateur"
@@ -100,6 +107,7 @@ export const AdminDashboard = () => {
         isLoading={isLoading}
         onRun={handleRunScraper}
         onSaveConfig={handleSaveConfig}
+        onRunAll={handleRunAllScrapers}
       />
       <div className="grid gap-4 lg:grid-cols-2">
         <UsersPanel users={users} isLoading={isLoading} />

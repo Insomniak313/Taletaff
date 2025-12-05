@@ -18,7 +18,7 @@ type ProviderEnvKeys = {
   token?: string;
 };
 
-const PROVIDER_ENV_KEYS: Record<JobProviderId, ProviderEnvKeys> = {
+const PROVIDER_ENV_KEYS: Partial<Record<JobProviderId, ProviderEnvKeys>> = {
   "france-travail": { endpoint: "FRANCE_TRAVAIL_API_URL", token: "FRANCE_TRAVAIL_API_TOKEN" },
   apec: { endpoint: "APEC_API_URL", token: "APEC_API_TOKEN" },
   meteojob: { endpoint: "METEOJOB_API_URL", token: "METEOJOB_API_KEY" },

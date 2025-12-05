@@ -1,43 +1,21 @@
 import { describe, expect, it } from "vitest";
-import {
-  determineDueProviders,
-  JOB_REFRESH_INTERVAL_MS,
-} from "@/features/jobs/scheduler/jobScheduler";
+import { determineDueProviders, JOB_REFRESH_INTERVAL_MS } from "@/features/jobs/scheduler/jobScheduler";
 import type { JobProvider, JobProviderId } from "@/features/jobs/providers";
 import type { ProviderRunRow } from "@/features/jobs/scheduler/jobScheduler";
 import type { JobProviderSettings } from "@/features/jobs/providers/types";
+import { JOB_PROVIDER_IDS } from "@/features/jobs/providers/types";
 
 const buildProvider = (id: JobProviderId, enabled = true): JobProvider => ({
   id,
   label: id,
   defaultCategory: "engineering",
+  language: "en",
   maxBatchSize: 50,
   isConfigured: () => enabled,
   fetchJobs: async () => [],
 });
 
-const PROVIDER_IDS: JobProviderId[] = [
-  "france-travail",
-  "apec",
-  "meteojob",
-  "hellowork",
-  "welcometothejungle",
-  "jobteaser",
-  "chooseyourboss",
-  "monster-fr",
-  "indeed-fr",
-  "talent-io",
-  "arbeitnow",
-  "jobicy",
-  "remoteok",
-  "thehub",
-  "weworkremotely",
-  "hackernews-jobs",
-  "headhunter",
-  "torre",
-  "zippia",
-  "themuse",
-] as const;
+const PROVIDER_IDS = JOB_PROVIDER_IDS as JobProviderId[];
 
 const createJobCounts = (
   overrides: Partial<Record<JobProviderId, number>> = {}

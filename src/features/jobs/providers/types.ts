@@ -1,24 +1,9 @@
-export type JobProviderId =
-  | "france-travail"
-  | "apec"
-  | "meteojob"
-  | "hellowork"
-  | "welcometothejungle"
-  | "jobteaser"
-  | "chooseyourboss"
-  | "monster-fr"
-  | "indeed-fr"
-  | "talent-io"
-  | "arbeitnow"
-  | "jobicy"
-  | "remoteok"
-  | "thehub"
-  | "weworkremotely"
-  | "hackernews-jobs"
-  | "headhunter"
-  | "torre"
-  | "zippia"
-  | "themuse";
+import { providerCatalog } from "@/features/jobs/providers/providerCatalog";
+
+export type JobProviderId = (typeof providerCatalog)[number]["id"];
+export type JobProviderLanguage = (typeof providerCatalog)[number]["language"];
+
+export const JOB_PROVIDER_IDS = providerCatalog.map((entry) => entry.id) as JobProviderId[];
 
 export interface ProviderJob {
   externalId: string;
@@ -32,6 +17,7 @@ export interface ProviderJob {
   salaryMax?: number | null;
   tags?: string[];
   publishedAt?: string;
+  language?: JobProviderLanguage;
 }
 
 export interface JobProviderContext {
@@ -57,6 +43,7 @@ export interface JobProvider {
   id: JobProviderId;
   label: string;
   defaultCategory: string;
+  language: JobProviderLanguage;
   maxBatchSize?: number;
   pagination?: ProviderPagination;
   isConfigured: (settings?: JobProviderSettings) => boolean;
