@@ -117,92 +117,101 @@ export const ScraperStatusPanel = ({ items, onRun, onSaveConfig, isLoading }: Sc
           </p>
         </div>
       </header>
-      <div className="grid gap-4">
-        {items.map((item) => {
-          const statusBadge = statusClasses[item.status] ?? statusClasses.idle;
-          const values = formValues[item.providerId] ?? { endpoint: "", authToken: "" };
-          return (
-            <article key={item.providerId} className="rounded-2xl border border-slate-200 p-4">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                  <p className="text-xs text-slate-500">{item.providerId}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge}`}>
-                    {item.status}
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">
-                    {item.jobCount} offres
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleRun(item.providerId)}
-                    disabled={running[item.providerId]}
-                    className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {running[item.providerId] ? "Relance..." : "Relancer"}
-                  </button>
-                </div>
-              </div>
-              <dl className="mt-3 grid gap-3 text-xs text-slate-600 md:grid-cols-3">
-                <div>
-                  <dt className="font-semibold text-slate-900">Dernier run</dt>
-                  <dd>{formatDate(item.lastRunAt)}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-slate-900">Dernier succès</dt>
-                  <dd>{formatDate(item.lastSuccessAt)}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-slate-900">Erreur</dt>
-                  <dd className="text-red-600">{item.error ?? "—"}</dd>
-                </div>
-              </dl>
-              <form
-                className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void handleSave(item.providerId);
-                }}
-              >
-                <label className="text-xs font-semibold text-slate-900">
-                  Endpoint
-                  <input
-                    type="url"
-                    placeholder="https://api.example.com/jobs"
-                    value={values.endpoint}
-                    onChange={(event) => updateField(item.providerId, "endpoint", event.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="text-xs font-semibold text-slate-900">
-                  Clé / token
-                  <input
-                    type="password"
-                    placeholder={item.settings.hasAuthToken ? "••••••••" : "Saisissez votre clé"}
-                    value={values.authToken}
-                    onChange={(event) => updateField(item.providerId, "authToken", event.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={saving[item.providerId]}
-                  className="mt-auto rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving[item.providerId] ? "Enregistrement..." : "Sauvegarder"}
-                </button>
-              </form>
-              {feedback[item.providerId] && (
-                <p className="mt-2 text-xs text-slate-500">{feedback[item.providerId]}</p>
-              )}
-            </article>
-          );
-        })}
-        {!items.length && !isLoading && (
-          <p className="text-sm text-slate-500">Aucun scraper configuré pour le moment.</p>
-        )}
+      <div className="overflow-x-auto">
+        <table className="min-w-[1080px] w-full text-sm">
+          <thead className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="py-3 pr-4">Provider</th>
+              <th className="py-3 pr-4">Langue</th>
+              <th className="py-3 pr-4">Statut</th>
+              <th className="py-3 pr-4">Dernier run</th>
+              <th className="py-3 pr-4">Dernier succès</th>
+              <th className="py-3 pr-4">Dernière erreur</th>
+              <th className="py-3 pr-4">Offres</th>
+              <th className="py-3 pr-4">Endpoint</th>
+              <th className="py-3 pr-4">Clé / token</th>
+              <th className="py-3 pl-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {items.map((item) => {
+              const statusBadge = statusClasses[item.status] ?? statusClasses.idle;
+              const values = formValues[item.providerId] ?? { endpoint: "", authToken: "" };
+              return (
+                <tr key={item.providerId} className="align-top">
+                  <td className="py-4 pr-4">
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-900">{item.label}</span>
+                      <span className="text-xs text-slate-500">{item.providerId}</span>
+                    </div>
+                  </td>
+                  <td className="py-4 pr-4">
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase text-slate-700">
+                      {item.language}
+                    </span>
+                  </td>
+                  <td className="py-4 pr-4">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="py-4 pr-4 text-xs text-slate-600">{formatDate(item.lastRunAt)}</td>
+                  <td className="py-4 pr-4 text-xs text-slate-600">{formatDate(item.lastSuccessAt)}</td>
+                  <td className="py-4 pr-4 text-xs text-red-600">{item.error ?? "—"}</td>
+                  <td className="py-4 pr-4 text-xs text-slate-700">{item.jobCount}</td>
+                  <td className="py-4 pr-4">
+                    <input
+                      type="url"
+                      placeholder="https://api.example.com/jobs"
+                      value={values.endpoint}
+                      onChange={(event) => updateField(item.providerId, "endpoint", event.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  </td>
+                  <td className="py-4 pr-4">
+                    <input
+                      type="password"
+                      placeholder={item.settings.hasAuthToken ? "••••••••" : "Saisissez votre clé"}
+                      value={values.authToken}
+                      onChange={(event) => updateField(item.providerId, "authToken", event.target.value)}
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                    />
+                  </td>
+                  <td className="py-4 pl-4">
+                    <div className="flex flex-col items-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleRun(item.providerId)}
+                        disabled={running[item.providerId]}
+                        className="w-full rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {running[item.providerId] ? "Relance..." : "Relancer"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleSave(item.providerId)}
+                        disabled={saving[item.providerId]}
+                        className="w-full rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {saving[item.providerId] ? "Enregistrement..." : "Sauvegarder"}
+                      </button>
+                      {feedback[item.providerId] && (
+                        <p className="text-right text-xs text-slate-500">{feedback[item.providerId]}</p>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {!items.length && (
+              <tr>
+                <td colSpan={10} className="py-6 text-center text-sm text-slate-500">
+                  {isLoading ? "Chargement en cours..." : "Aucun scraper configuré pour le moment."}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </section>
   );

@@ -190,6 +190,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "france-travail",
     label: "France Travail (ex Pôle emploi)",
+    language: "fr",
     endpoint: optionalEnv("FRANCE_TRAVAIL_API_URL"),
     defaultCategory: "engineering",
     itemsPath: ["resultats"],
@@ -222,6 +223,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "apec",
     label: "APEC",
+    language: "fr",
     endpoint: optionalEnv("APEC_API_URL"),
     defaultCategory: "operations",
     itemsPath: ["offers"],
@@ -244,6 +246,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "meteojob",
     label: "Meteojob",
+    language: "fr",
     endpoint: optionalEnv("METEOJOB_API_URL"),
     defaultCategory: "marketing",
     itemsPath: ["data", "jobs"],
@@ -266,6 +269,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "hellowork",
     label: "HelloWork / RegionsJob",
+    language: "fr",
     endpoint: optionalEnv("HELLOWORK_API_URL"),
     defaultCategory: "engineering",
     itemsPath: ["jobs"],
@@ -288,6 +292,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "welcometothejungle",
     label: "Welcome to the Jungle",
+    language: "fr",
     endpoint: optionalEnv("WTTJ_API_URL"),
     defaultCategory: "product",
     itemsPath: ["offers"],
@@ -310,6 +315,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "jobteaser",
     label: "JobTeaser",
+    language: "fr",
     endpoint: optionalEnv("JOBTEASER_API_URL"),
     defaultCategory: "marketing",
     itemsPath: ["results"],
@@ -332,6 +338,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "chooseyourboss",
     label: "ChooseYourBoss",
+    language: "fr",
     endpoint: optionalEnv("CHOOSEYOURBOSS_API_URL"),
     defaultCategory: "engineering",
     itemsPath: ["jobs"],
@@ -354,6 +361,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "monster-fr",
     label: "Monster France",
+    language: "fr",
     endpoint: optionalEnv("MONSTER_FR_API_URL"),
     defaultCategory: "operations",
     itemsPath: ["jobList"],
@@ -376,6 +384,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "indeed-fr",
     label: "Indeed France",
+    language: "fr",
     endpoint: optionalEnv("INDEED_FR_API_URL"),
     defaultCategory: "marketing",
     itemsPath: ["results"],
@@ -398,6 +407,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "talent-io",
     label: "talent.io",
+    language: "fr",
     endpoint: optionalEnv("TALENT_IO_API_URL"),
     defaultCategory: "engineering",
     itemsPath: ["jobs"],
@@ -420,6 +430,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "arbeitnow",
     label: "Arbeitnow",
+    language: "de",
     endpoint: optionalEnv("ARBEITNOW_API_URL") ?? "https://www.arbeitnow.com/api/job-board-api",
     defaultCategory: "engineering",
     itemsPath: ["data", "jobs"],
@@ -460,6 +471,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "jobicy",
     label: "Jobicy",
+    language: "en",
     endpoint: optionalEnv("JOBICY_API_URL") ?? "https://jobicy.com/api/v2/remote-jobs",
     defaultCategory: "operations",
     itemsPath: ["jobs"],
@@ -491,6 +503,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "remoteok",
     label: "RemoteOK",
+    language: "en",
     endpoint: optionalEnv("REMOTEOK_API_URL") ?? "https://remoteok.com/api",
     defaultCategory: "engineering",
     mapItem: (record) => {
@@ -521,6 +534,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "thehub",
     label: "The Hub",
+    language: "en",
     endpoint: optionalEnv("THEHUB_API_URL") ?? "https://thehub.io/api/jobs",
     defaultCategory: "product",
     itemsPath: ["docs"],
@@ -557,6 +571,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "weworkremotely",
     label: "We Work Remotely (RSS)",
+    language: "en",
     endpoint: optionalEnv("WEWORKREMOTELY_API_URL") ?? "https://api.rss2json.com/v1/api.json",
     defaultCategory: "engineering",
     itemsPath: ["items"],
@@ -588,6 +603,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "hackernews-jobs",
     label: "Hacker News Jobs",
+    language: "en",
     endpoint:
       optionalEnv("HACKERNEWS_JOBS_API_URL") ??
       "https://hn.algolia.com/api/v1/search_by_date",
@@ -623,6 +639,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "headhunter",
     label: "HeadHunter",
+    language: "ru",
     endpoint: optionalEnv("HEADHUNTER_API_URL") ?? "https://api.hh.ru/vacancies",
     defaultCategory: "operations",
     maxBatchSize: 100,
@@ -683,6 +700,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "torre",
     label: "Torre",
+    language: "es",
     endpoint: optionalEnv("TORRE_API_URL") ?? "https://search.torre.co/opportunities/_search/",
     defaultCategory: "product",
     method: "POST",
@@ -738,6 +756,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "zippia",
     label: "Zippia",
+    language: "en",
     endpoint: optionalEnv("ZIPPIA_API_URL") ?? "https://www.zippia.com/api/jobs/",
     defaultCategory: "engineering",
     method: "POST",
@@ -786,6 +805,7 @@ const frJobProviders: JobProvider[] = [
   createJsonProvider({
     id: "themuse",
     label: "The Muse",
+    language: "en",
     endpoint: optionalEnv("THEMUSE_API_URL") ?? "https://www.themuse.com/api/public/jobs",
     defaultCategory: "operations",
     maxBatchSize: 20,

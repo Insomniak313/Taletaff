@@ -1,0 +1,61 @@
+import type { JobProvider } from "@/features/jobs/providers/types";
+import { createWebhookProvider } from "@/features/jobs/providers/providerFactory";
+
+const webhookDefinitions = [
+  { id: "indeed-us", label: "Indeed (US)", defaultCategory: "engineering", language: "en" },
+  { id: "indeed-uk", label: "Indeed (UK)", defaultCategory: "engineering", language: "en" },
+  { id: "indeed-de", label: "Indeed (DE)", defaultCategory: "engineering", language: "de" },
+  { id: "indeed-es", label: "Indeed (ES)", defaultCategory: "engineering", language: "es" },
+  { id: "indeed-it", label: "Indeed (IT)", defaultCategory: "engineering", language: "it" },
+  { id: "indeed-nl", label: "Indeed (NL)", defaultCategory: "engineering", language: "nl" },
+  { id: "glassdoor-fr", label: "Glassdoor (FR)", defaultCategory: "product", language: "fr" },
+  { id: "glassdoor-uk", label: "Glassdoor (UK)", defaultCategory: "product", language: "en" },
+  { id: "glassdoor-de", label: "Glassdoor (DE)", defaultCategory: "product", language: "de" },
+  { id: "glassdoor-us", label: "Glassdoor (US)", defaultCategory: "product", language: "en" },
+  { id: "linkedin-fr", label: "LinkedIn (FR)", defaultCategory: "engineering", language: "fr" },
+  { id: "linkedin-de", label: "LinkedIn (DE)", defaultCategory: "engineering", language: "de" },
+  { id: "linkedin-es", label: "LinkedIn (ES)", defaultCategory: "engineering", language: "es" },
+  { id: "linkedin-uk", label: "LinkedIn (UK)", defaultCategory: "engineering", language: "en" },
+  { id: "stepstone-de", label: "StepStone (DE)", defaultCategory: "operations", language: "de" },
+  { id: "stepstone-nl", label: "StepStone (NL)", defaultCategory: "operations", language: "nl" },
+  { id: "stepstone-be", label: "StepStone (BE)", defaultCategory: "operations", language: "fr" },
+  { id: "reed-uk", label: "Reed.co.uk", defaultCategory: "operations", language: "en" },
+  { id: "totaljobs-uk", label: "TotalJobs (UK)", defaultCategory: "operations", language: "en" },
+  { id: "jobserve-uk", label: "JobServe (UK)", defaultCategory: "engineering", language: "en" },
+  { id: "irishjobs-ie", label: "IrishJobs", defaultCategory: "operations", language: "en" },
+  { id: "seek-au", label: "SEEK (AU)", defaultCategory: "engineering", language: "en" },
+  { id: "seek-nz", label: "SEEK (NZ)", defaultCategory: "engineering", language: "en" },
+  { id: "jobstreet-sg", label: "JobStreet (SG)", defaultCategory: "engineering", language: "en" },
+  { id: "jobstreet-my", label: "JobStreet (MY)", defaultCategory: "engineering", language: "ms" },
+  { id: "jobstreet-ph", label: "JobStreet (PH)", defaultCategory: "engineering", language: "en" },
+  { id: "jobstreet-id", label: "JobStreet (ID)", defaultCategory: "engineering", language: "id" },
+  { id: "jobstreet-vn", label: "JobStreet (VN)", defaultCategory: "engineering", language: "vi" },
+  { id: "infojobs-es", label: "InfoJobs (ES)", defaultCategory: "operations", language: "es" },
+  { id: "infojobs-it", label: "InfoJobs (IT)", defaultCategory: "operations", language: "it" },
+  { id: "catho-br", label: "Catho (BR)", defaultCategory: "operations", language: "pt" },
+  { id: "gupy-br", label: "Gupy (BR)", defaultCategory: "operations", language: "pt" },
+  { id: "bumeran-ar", label: "Bumeran (AR)", defaultCategory: "operations", language: "es" },
+  { id: "bumeran-pe", label: "Bumeran (PE)", defaultCategory: "operations", language: "es" },
+  { id: "computrabajo-mx", label: "Computrabajo (MX)", defaultCategory: "operations", language: "es" },
+  { id: "computrabajo-co", label: "Computrabajo (CO)", defaultCategory: "operations", language: "es" },
+  { id: "elempleo-co", label: "Elempleo (CO)", defaultCategory: "operations", language: "es" },
+  { id: "workana-latam", label: "Workana LATAM", defaultCategory: "product", language: "es" },
+  { id: "pracuj-pl", label: "Pracuj.pl", defaultCategory: "operations", language: "pl" },
+  { id: "praca-sk", label: "Práca.sk", defaultCategory: "operations", language: "sk" },
+  { id: "jobs-ch", label: "jobs.ch", defaultCategory: "engineering", language: "de" },
+  { id: "jobup-ch", label: "Jobup.ch", defaultCategory: "operations", language: "fr" },
+  { id: "eures-eu", label: "EURES Europe", defaultCategory: "engineering", language: "en" },
+  { id: "adzuna-uk", label: "Adzuna (UK)", defaultCategory: "engineering", language: "en" },
+  { id: "adzuna-fr", label: "Adzuna (FR)", defaultCategory: "engineering", language: "fr" },
+  { id: "adzuna-au", label: "Adzuna (AU)", defaultCategory: "engineering", language: "en" },
+  { id: "adzuna-ca", label: "Adzuna (CA)", defaultCategory: "engineering", language: "en" },
+  { id: "adzuna-us", label: "Adzuna (US)", defaultCategory: "engineering", language: "en" },
+  { id: "wearedevelopers-de", label: "WeAreDevelopers (DE)", defaultCategory: "engineering", language: "de" },
+  { id: "stackshare-us", label: "StackShare (US)", defaultCategory: "engineering", language: "en" },
+] as const;
+
+const webhookProviders: JobProvider[] = webhookDefinitions.map((definition) =>
+  createWebhookProvider(definition)
+);
+
+export { webhookProviders };

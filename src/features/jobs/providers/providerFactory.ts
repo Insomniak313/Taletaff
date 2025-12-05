@@ -2,6 +2,7 @@ import type {
   JobProvider,
   JobProviderContext,
   JobProviderId,
+  JobProviderLanguage,
   JobProviderSettings,
   ProviderJob,
   ProviderPagination,
@@ -9,11 +10,24 @@ import type {
 
 const DEFAULT_TIMEOUT_MS = 12000;
 
+const normalizeHeaders = (
+  value?: Record<string, string | undefined> | undefined
+): Record<string, string> | undefined => {
+  if (!value) {
+    return undefined;
+  }
+  const entries = Object.entries(value).filter(
+    (entry): entry is [string, string] => typeof entry[1] === "string"
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+};
+
 type JsonItemsPath = string[];
 
 type JsonProviderDefinition = {
   id: JobProviderId;
   label: string;
+  language: JobProviderLanguage;
   endpoint?: string;
   defaultCategory: string;
   method?: "GET" | "POST";
@@ -69,18 +83,6 @@ export const optionalEnv = (key: string): string | undefined => {
 };
 
 export const createJsonProvider = (definition: JsonProviderDefinition): JobProvider => {
-  const normalizeHeaders = (
-    value?: Record<string, string | undefined> | undefined
-  ): Record<string, string> | undefined => {
-    if (!value) {
-      return undefined;
-    }
-    const entries = Object.entries(value).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string"
-    );
-    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
-  };
-
   const resolveEndpoint = (settings?: JobProviderSettings): string | undefined => {
     return settings?.endpoint ?? definition.endpoint;
   };
@@ -88,6 +90,7 @@ export const createJsonProvider = (definition: JsonProviderDefinition): JobProvi
   return {
     id: definition.id,
     label: definition.label,
+    language: definition.language,
     defaultCategory: definition.defaultCategory,
     maxBatchSize: definition.maxBatchSize ?? 200,
     pagination: definition.pagination,
@@ -136,6 +139,105 @@ export const createJsonProvider = (definition: JsonProviderDefinition): JobProvi
       return items
         .map((record) => definition.mapItem(record))
         .filter((job): job is ProviderJob => Boolean(job));
+    },
+  };
+};
+
+type WebhookProviderDefinition = {
+  id: JobProviderId;
+  label: string;
+  defaultCategory: string;
+  language: JobProviderLanguage;
+};
+
+const sanitizeWebhookJob = (
+  record: Record<string, unknown>,
+  fallback: WebhookProviderDefinition
+): ProviderJob | null => {
+  const externalId = stringFrom(record.externalId);
+  const title = stringFrom(record.title);
+
+  if (!externalId || !title) {
+    return null;
+  }
+
+  const languageValue = stringFrom(record.language);
+
+  return {
+    externalId,
+    title,
+    company: stringFrom(record.company) ?? fallback.label,
+    location: stringFrom(record.location),
+    description: stringFrom(record.description) ?? "",
+    category: stringFrom(record.category) ?? fallback.defaultCategory,
+    tags: coerceTags(record.tags),
+    remote: record.remote !== undefined ? booleanFrom(record.remote) : undefined,
+    salaryMin: numberFrom(record.salaryMin ?? record.salary_min) ?? null,
+    salaryMax: numberFrom(record.salaryMax ?? record.salary_max) ?? null,
+    publishedAt: publishedAtFrom(record.publishedAt ?? record.published_at),
+    language:
+      (languageValue && (languageValue as JobProviderLanguage)) ?? fallback.language,
+  };
+};
+
+const normalizeWebhookPayload = (
+  payload: unknown,
+  fallback: WebhookProviderDefinition
+): ProviderJob[] => {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+  return payload
+    .map((entry) => {
+      if (entry && typeof entry === "object") {
+        return sanitizeWebhookJob(entry as Record<string, unknown>, fallback);
+      }
+      return null;
+    })
+    .filter((job): job is ProviderJob => Boolean(job));
+};
+
+export const createWebhookProvider = (definition: WebhookProviderDefinition): JobProvider => {
+  return {
+    id: definition.id,
+    label: definition.label,
+    language: definition.language,
+    defaultCategory: definition.defaultCategory,
+    maxBatchSize: 500,
+    isConfigured: (settings) => Boolean(settings?.endpoint),
+    async fetchJobs(context, settings) {
+      const endpoint = settings?.endpoint;
+      if (!endpoint) {
+        return [];
+      }
+      const url = new URL(endpoint);
+      if (context.limit) {
+        url.searchParams.set("limit", String(context.limit));
+      }
+      if (context.page) {
+        url.searchParams.set("page", String(context.page));
+      }
+      if (context.since) {
+        url.searchParams.set("since", context.since.toISOString());
+      }
+      const baseHeaders = settings?.headers ?? {};
+      const authHeaders = settings?.authToken
+        ? { Authorization: `Bearer ${settings.authToken}` }
+        : undefined;
+      const headers = normalizeHeaders({ ...baseHeaders, ...(authHeaders ?? {}) });
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers,
+      });
+
+      if (!response.ok) {
+        const message = await response.text().catch(() => response.statusText);
+        throw new Error(`Webhook ${definition.id} indisponible (${response.status}): ${message}`);
+      }
+
+      const payload = (await response.json()) as unknown;
+      return normalizeWebhookPayload(payload, definition);
     },
   };
 };

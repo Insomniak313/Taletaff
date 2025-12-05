@@ -1,9 +1,10 @@
-import type { JobProviderId } from "@/features/jobs/providers";
+import type { JobProviderId, JobProviderLanguage } from "@/features/jobs/providers";
 import type { UserRole } from "@/types/auth";
 
 export interface ScraperStatusSummary {
   providerId: JobProviderId;
   label: string;
+  language: JobProviderLanguage;
   status: string;
   lastRunAt: string | null;
   lastSuccessAt: string | null;
