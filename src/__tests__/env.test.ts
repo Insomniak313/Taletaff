@@ -13,6 +13,7 @@ describe("env modules", () => {
     vi.resetModules();
     setBaseEnv();
     delete process.env.VERCEL_URL;
+    delete process.env.NEXT_RUNTIME_ENV;
   });
 
   it("expose les variables publiques", async () => {
@@ -39,6 +40,29 @@ describe("env modules", () => {
     process.env.VERCEL_URL = "taletaff.vercel.app";
 
     const { clientEnv } = await import("@/lib/env.client");
+    expect(clientEnv.siteUrl).toBe("https://taletaff.vercel.app");
+    expect(clientEnv.defaultRedirect).toBe("https://taletaff.vercel.app/auth/callback");
+  });
+
+  it("retombe sur localhost en développement sans configuration explicite", async () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.NEXT_PUBLIC_DEFAULT_REDIRECT;
+    delete process.env.VERCEL_URL;
+    delete process.env.NEXT_RUNTIME_ENV;
+
+    const { clientEnv } = await import("@/lib/env.client");
+    expect(clientEnv.siteUrl).toBe("http://localhost:3000");
+    expect(clientEnv.defaultRedirect).toBe("http://localhost:3000/auth/callback");
+  });
+
+  it("retombe sur le domaine par défaut en production sans configuration explicite", async () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.NEXT_PUBLIC_DEFAULT_REDIRECT;
+    delete process.env.VERCEL_URL;
+    process.env.NEXT_RUNTIME_ENV = "production";
+
+    const { clientEnv } = await import("@/lib/env.client");
+
     expect(clientEnv.siteUrl).toBe("https://taletaff.vercel.app");
     expect(clientEnv.defaultRedirect).toBe("https://taletaff.vercel.app/auth/callback");
   });

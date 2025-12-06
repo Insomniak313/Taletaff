@@ -8,14 +8,12 @@ const readClientEnv = (value: string | undefined, key: ClientEnvKey) => {
 };
 
 const normalizeUrl = (value: string) => {
-  if (!value) {
-    return value;
-  }
   const trimmed = value.trim();
+  const withoutTrailingSlash = trimmed.replace(/\/$/, "");
   if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed.replace(/\/$/, "");
+    return withoutTrailingSlash;
   }
-  return `https://${trimmed.replace(/\/$/, "")}`;
+  return `https://${withoutTrailingSlash}`;
 };
 
 const resolveSiteUrl = () => {
@@ -29,7 +27,8 @@ const resolveSiteUrl = () => {
     return normalizeUrl(vercelUrl);
   }
 
-  if (process.env.NODE_ENV === "production") {
+  const runtimeEnv = process.env.NEXT_RUNTIME_ENV ?? process.env.NODE_ENV;
+  if (runtimeEnv === "production") {
     return "https://taletaff.vercel.app";
   }
 

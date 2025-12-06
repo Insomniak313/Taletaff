@@ -26,19 +26,22 @@ const mockSummary = {
   topTags: [{ label: "TypeScript", count: 1 }],
 };
 
-const buildResponse = (
-  overrides: Partial<{
-    jobs: typeof mockJobs;
-    summary: typeof mockSummary;
-    pagination: {
-      page: number;
-      pageSize: number;
-      pageCount: number;
-      totalCount: number;
-    };
-  }> = {}
-) => {
-  const summary = overrides.summary ?? mockSummary;
+type ResponseOverrides = {
+  jobs?: typeof mockJobs;
+  summary?: Partial<typeof mockSummary>;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    pageCount: number;
+    totalCount: number;
+  };
+};
+
+const buildResponse = (overrides: ResponseOverrides = {}) => {
+  const summary =
+    overrides.summary !== undefined
+      ? ({ ...mockSummary, ...overrides.summary } as typeof mockSummary)
+      : mockSummary;
   const basePagination = overrides.pagination ?? {
     page: 1,
     pageSize: 10,
@@ -112,6 +115,40 @@ describe("useJobSearch", () => {
 
     await waitFor(() => expect(result.current.summary.count).toBe(0));
     expect(result.current.summary.remoteShare).toBe(0);
+  });
+
+  it("gère une réponse sans tableau d'offres", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ summary: mockSummary }),
+    } as Response);
+
+    const { result } = renderHook(() => useJobSearch({}));
+
+    await waitFor(() => {
+      expect(result.current.jobs).toHaveLength(0);
+      expect(result.current.totalCount).toBe(mockSummary.count);
+    });
+  });
+
+  it("recalcule le total d'offres quand aucun count n'est fourni", async () => {
+    const summaryWithoutCount = {
+      ...mockSummary,
+      count: undefined,
+    } as unknown as typeof mockSummary;
+
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        jobs: mockJobs,
+        summary: summaryWithoutCount,
+      }),
+    } as Response);
+
+    const { result } = renderHook(() => useJobSearch({}));
+
+    await waitFor(() => expect(result.current.totalCount).toBe(mockJobs.length));
+    expect(result.current.summary.count).toBe(mockJobs.length);
   });
 
   it("met à jour la catégorie", async () => {
@@ -214,6 +251,45 @@ describe("useJobSearch", () => {
     expect(result.current.selectedTags).toEqual([]);
     expect(result.current.page).toBe(1);
     expect(result.current.pageSize).toBe(10);
+  });
+
+  it("sanitise les entrées de pagination invalides", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => buildResponse(),
+      } as Response)
+    );
+
+    const { result } = renderHook(() => useJobSearch({}));
+
+    await waitFor(() => expect(result.current.page).toBe(1));
+
+    await act(async () => {
+      result.current.setPage(0);
+    });
+    await waitFor(() => expect(result.current.page).toBe(1));
+    const callsAfterInvalidPage = fetchSpy.mock.calls.length;
+
+    await act(async () => {
+      result.current.setPage(1);
+    });
+    expect(fetchSpy.mock.calls.length).toBe(callsAfterInvalidPage);
+
+    await act(async () => {
+      result.current.setPageSize(0);
+    });
+    await waitFor(() => {
+      expect(result.current.pageSize).toBe(10);
+      expect(result.current.page).toBe(1);
+    });
+
+    const callsAfterSizeReset = fetchSpy.mock.calls.length;
+
+    await act(async () => {
+      result.current.setPageSize(10);
+    });
+    expect(fetchSpy.mock.calls.length).toBe(callsAfterSizeReset);
   });
 
   it("met à jour la pagination distante", async () => {

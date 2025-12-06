@@ -119,7 +119,7 @@ describe("jobService", () => {
         },
       ],
       error: null,
-      count: 1,
+      count: null,
     };
     const result = await jobService.searchJobs();
     expect(result.jobs[0]).toMatchObject({
@@ -148,7 +148,7 @@ describe("jobService", () => {
         },
       ],
       error: null,
-      count: 1,
+      count: null,
     };
     const result = await jobService.searchJobs();
     expect(result.jobs[0]).toMatchObject({
@@ -161,5 +161,31 @@ describe("jobService", () => {
   it("applique un offset personnalisé quand seule la page change", async () => {
     await jobService.searchJobs({ offset: 20 });
     expect(queryBuilder.range).toHaveBeenCalledWith(20, 419);
+  });
+
+  it("retombe sur le nombre d'offres lorsque le count est absent", async () => {
+    mockData = {
+      data: [
+        {
+          id: "42",
+          title: "Ops Lead",
+          company: "Acme",
+          location: "Remote",
+          category: "operations",
+          description: "Desc",
+          remote: true,
+          salary_min: 50000,
+          salary_max: 80000,
+          tags: [],
+          created_at: new Date().toISOString(),
+        },
+      ],
+      error: null,
+      count: null,
+    };
+
+    const result = await jobService.searchJobs();
+    expect(result.totalCount).toBe(1);
+    expect(result.summary.count).toBe(1);
   });
 });
