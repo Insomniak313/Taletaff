@@ -1,4 +1,9 @@
-import type { JobProvider, JobProviderSettings, JobProviderId } from "@/features/jobs/providers/types";
+import type {
+  JobProvider,
+  JobProviderSettings,
+  JobProviderId,
+  ProviderJob,
+} from "@/features/jobs/providers/types";
 import {
   booleanFrom,
   coerceTags,
@@ -11,6 +16,106 @@ import {
 import { getProviderMeta } from "@/features/jobs/providers/providerCatalog";
 
 type RecordValue = Record<string, unknown>;
+
+const DEFAULT_URL_KEYS = [
+  "url",
+  "link",
+  "links.apply",
+  "links.offer",
+  "links.detail",
+  "links.job",
+  "urls.apply",
+  "urls.offer",
+  "urls.detail",
+  "urls.job",
+  "applyUrl",
+  "apply_url",
+  "apply.url",
+  "jobUrl",
+  "job_url",
+  "offerUrl",
+  "offer_url",
+  "detailUrl",
+  "detail_url",
+  "redirectUrl",
+  "redirect_url",
+] as const;
+
+const toAbsoluteUrl = (value: unknown): string | undefined => {
+  const directString = typeof value === "string" ? value : stringFrom(value);
+  const normalized = directString?.trim();
+  if (normalized && /^https?:\/\//i.test(normalized)) {
+    try {
+      const url = new URL(normalized);
+      return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  if (value && typeof value === "object") {
+    const nested = (value as RecordValue).url ?? (value as RecordValue).href ?? (value as RecordValue).link;
+    return nested ? toAbsoluteUrl(nested) : undefined;
+  }
+  return undefined;
+};
+
+const resolveExternalUrl = (record: RecordValue, keys?: string[]): string | undefined => {
+  const searchKeys = [...new Set([...(keys ?? []), ...DEFAULT_URL_KEYS])];
+  for (const key of searchKeys) {
+    const raw = readValue(record, key);
+    const url = toAbsoluteUrl(raw);
+    if (url) {
+      return url;
+    }
+  }
+
+  const links = record.links as unknown;
+  if (Array.isArray(links)) {
+    for (const entry of links) {
+      const url = toAbsoluteUrl(entry);
+      if (url) {
+        return url;
+      }
+    }
+  } else if (links && typeof links === "object") {
+    for (const value of Object.values(links as RecordValue)) {
+      const url = toAbsoluteUrl(value);
+      if (url) {
+        return url;
+      }
+    }
+  }
+
+  const urlsRecord = record.urls as RecordValue | undefined;
+  if (urlsRecord && typeof urlsRecord === "object" && !Array.isArray(urlsRecord)) {
+    for (const value of Object.values(urlsRecord)) {
+      const url = toAbsoluteUrl(value);
+      if (url) {
+        return url;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const attachExternalUrl = (
+  record: RecordValue,
+  job: ProviderJob,
+  options?: { urlKeys?: string[] }
+): ProviderJob => {
+  const normalizedCurrent = toAbsoluteUrl(job.externalUrl);
+  if (normalizedCurrent) {
+    return { ...job, externalUrl: normalizedCurrent };
+  }
+  const resolved =
+    resolveExternalUrl(record, options?.urlKeys) ??
+    (toAbsoluteUrl(job.externalId) ?? undefined);
+  return {
+    ...job,
+    externalUrl: resolved,
+  };
+};
 
 const isNumericString = (value: string): boolean => /^-?\d+(\.\d+)?$/.test(value);
 
@@ -96,6 +201,7 @@ const buildProviderJob = (
     salaryMinKeys?: string[];
     salaryMaxKeys?: string[];
     publishedAtKeys?: string[];
+    urlKeys?: string[];
   }
 ) => {
   const pickString = (keys: string[] | undefined): string | undefined => {
@@ -165,7 +271,7 @@ const buildProviderJob = (
     return null;
   }
 
-  return {
+  const job: ProviderJob = {
     externalId,
     title,
     company: pickString(options.companyKeys) ?? "Entreprise confidentielle",
@@ -178,6 +284,8 @@ const buildProviderJob = (
     salaryMax: pickNumber(options.salaryMaxKeys),
     publishedAt: pickPublishedAt(options.publishedAtKeys),
   };
+
+  return attachExternalUrl(record, job, { urlKeys: options.urlKeys });
 };
 
 const bearerHeaders =
@@ -432,7 +540,7 @@ const frJobProviders: JobProvider[] = [
       }
       const jobTypes = asStringArray(record.job_types ?? record.types);
       const tags = Array.from(new Set([...coerceTags(record.tags), ...jobTypes])).slice(0, 8);
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: stringFrom(record.company_name) ?? "Entreprise confidentielle",
@@ -445,6 +553,7 @@ const frJobProviders: JobProvider[] = [
         salaryMax: numberFrom(record.salary_max) ?? null,
         publishedAt: publishedAtFromEpoch(record.created_at) ?? publishedAtFrom(record.updated_at),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("jobicy", {
@@ -460,7 +569,7 @@ const frJobProviders: JobProvider[] = [
       const jobTypes = asStringArray(record.jobType);
       const levels = asStringArray(record.jobLevel);
       const tags = Array.from(new Set([...industryTags, ...jobTypes, ...levels])).slice(0, 8);
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: stringFrom(record.companyName) ?? "Entreprise confidentielle",
@@ -473,6 +582,7 @@ const frJobProviders: JobProvider[] = [
         salaryMax: numberFrom(record.salaryMax) ?? null,
         publishedAt: publishedAtFrom(record.pubDate ?? record.postedDate ?? record.createdAt),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("remoteok", {
@@ -487,7 +597,7 @@ const frJobProviders: JobProvider[] = [
       if (!company) {
         return null;
       }
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company,
@@ -500,6 +610,7 @@ const frJobProviders: JobProvider[] = [
         salaryMax: numberFrom((record as RecordValue).salary_max) ?? null,
         publishedAt: publishedAtFrom((record as RecordValue).date),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("thehub", {
@@ -518,7 +629,7 @@ const frJobProviders: JobProvider[] = [
         : [];
       const tags = Array.from(new Set([...industries, ...perks])).slice(0, 8);
       const location = record.location as RecordValue | undefined;
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: stringFrom(company?.name) ?? "Entreprise confidentielle",
@@ -533,6 +644,7 @@ const frJobProviders: JobProvider[] = [
         remote: record.isRemote !== undefined ? booleanFrom(record.isRemote) : undefined,
         publishedAt: publishedAtFrom(record.publishedAt ?? record.createdAt),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("weworkremotely", {
@@ -550,7 +662,7 @@ const frJobProviders: JobProvider[] = [
       }
       const description = stringFrom(record.content) ?? stringFrom(record.description) ?? "";
       const categories = coerceTags(record.categories);
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: company ?? "Entreprise confidentielle",
@@ -561,6 +673,7 @@ const frJobProviders: JobProvider[] = [
         remote: true,
         publishedAt: publishedAtFrom(record.pubDate),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("hackernews-jobs", {
@@ -583,7 +696,7 @@ const frJobProviders: JobProvider[] = [
         stringFrom(record.comment_text) ??
         stringFrom(record.url) ??
         "";
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: stringFrom(record.author) ?? "Entreprise confidentielle",
@@ -593,6 +706,7 @@ const frJobProviders: JobProvider[] = [
         remote: title.toLowerCase().includes("remote") ? true : undefined,
         publishedAt: publishedAtFrom(record.created_at),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("headhunter", {
@@ -634,7 +748,7 @@ const frJobProviders: JobProvider[] = [
       const remote = workFormats.some((format) => stringFrom(format.id)?.toLowerCase().includes("remote"));
       const requirement = stringFrom(snippet?.requirement);
       const responsibility = stringFrom(snippet?.responsibility);
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: stringFrom(employer?.name) ?? "Entreprise confidentielle",
@@ -650,6 +764,7 @@ const frJobProviders: JobProvider[] = [
         salaryMax: salary ? numberFrom(salary.to) ?? null : null,
         publishedAt: publishedAtFrom(record.published_at),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("torre", {
@@ -689,7 +804,7 @@ const frJobProviders: JobProvider[] = [
       const locations = rawLocations
         .map((entry) => stringFrom(entry))
         .filter((entry): entry is string => Boolean(entry));
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: stringFrom(organizations[0]?.name) ?? "Entreprise confidentielle",
@@ -702,6 +817,7 @@ const frJobProviders: JobProvider[] = [
         salaryMax: compensation ? numberFrom(compensation.maxAmount) ?? null : null,
         publishedAt: publishedAtFrom(record.created),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("zippia", {
@@ -731,7 +847,7 @@ const frJobProviders: JobProvider[] = [
       const remote =
         tags.some((tag) => tag.toLowerCase().includes("remote")) ||
         stringFrom(record.location)?.toLowerCase().includes("remote");
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: stringFrom(record.companyName) ?? "Entreprise confidentielle",
@@ -747,6 +863,7 @@ const frJobProviders: JobProvider[] = [
           publishedAtFrom(record.OBJpostingDate) ??
           publishedAtFrom(record.postedDate),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
   buildJsonProvider("themuse", {
@@ -778,7 +895,7 @@ const frJobProviders: JobProvider[] = [
       const locationLabel = locations.length > 0 ? locations.join(" · ") : undefined;
       const remote = locations.some((location) => location.toLowerCase().includes("remote"));
       const company = record.company as RecordValue | undefined;
-      return {
+      const job: ProviderJob = {
         externalId,
         title,
         company: stringFrom(company?.name) ?? "Entreprise confidentielle",
@@ -789,6 +906,7 @@ const frJobProviders: JobProvider[] = [
         remote: remote ? true : undefined,
         publishedAt: publishedAtFrom(record.publication_date),
       };
+      return attachExternalUrl(record as RecordValue, job);
     },
   }),
 ];

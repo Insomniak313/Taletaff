@@ -27,6 +27,7 @@ interface JobInsertRow {
   source: JobProviderId;
   external_id: string;
   fetched_at: string;
+  external_url: string;
 }
 
 export interface JobScraperResult {
@@ -49,6 +50,50 @@ const normalizeNumber = (value: number | null | undefined): number => {
   return 0;
 };
 
+const looksLikeAbsoluteUrl = (value?: string): boolean => {
+  return typeof value === "string" && /^https?:\/\//i.test(value.trim());
+};
+
+const normalizeExternalUrl = (value?: string): string | null => {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!looksLikeAbsoluteUrl(trimmed)) {
+    return null;
+  }
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
+const buildSearchFallbackUrl = (job: ProviderJob, provider: JobProvider): string => {
+  const segments = [job.title, job.company, provider.label, job.externalId]
+    .map((segment) => (typeof segment === "string" ? segment.trim() : undefined))
+    .filter((segment): segment is string => Boolean(segment));
+  const query = segments.length ? segments.join(" ") : "offre emploi";
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+};
+
+const resolveExternalUrl = (provider: JobProvider, job: ProviderJob): string => {
+  const candidates = [
+    job.externalUrl,
+    job.externalId && looksLikeAbsoluteUrl(job.externalId) ? job.externalId : undefined,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeExternalUrl(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return buildSearchFallbackUrl(job, provider);
+};
+
 const toJobRow = (provider: JobProvider, job: ProviderJob): JobInsertRow | null => {
   if (!job.externalId || !job.title) {
     return null;
@@ -56,6 +101,7 @@ const toJobRow = (provider: JobProvider, job: ProviderJob): JobInsertRow | null 
 
   const salaryMin = normalizeNumber(job.salaryMin ?? undefined);
   const salaryMax = Math.max(salaryMin, normalizeNumber(job.salaryMax ?? undefined));
+  const externalUrl = resolveExternalUrl(provider, job);
 
   return {
     title: job.title,
@@ -70,6 +116,7 @@ const toJobRow = (provider: JobProvider, job: ProviderJob): JobInsertRow | null 
     source: provider.id,
     external_id: job.externalId,
     fetched_at: job.publishedAt ?? new Date().toISOString(),
+    external_url: externalUrl,
   };
 };
 
