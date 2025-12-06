@@ -25,6 +25,7 @@ export interface JobRecord {
   tags: string[];
   createdAt: string;
   source?: JobProviderId;
+  externalUrl: string;
   externalId?: string | null;
   fetchedAt?: string | null;
 }

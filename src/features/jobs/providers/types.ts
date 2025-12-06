@@ -18,6 +18,7 @@ export interface ProviderJob {
   tags?: string[];
   publishedAt?: string;
   language?: JobProviderLanguage;
+  externalUrl?: string;
 }
 
 export interface JobProviderContext {

@@ -145,10 +145,20 @@ export const JobCard = ({ job }: JobCardProps) => {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          <span className="rounded-full border border-slate-200 px-3 py-1 text-slate-600">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
             {job.source ? `Source ${job.source}` : "Source Taletaff"}
           </span>
+          <a
+            href={job.externalUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            aria-label={`Consulter l'offre ${job.title} chez ${job.company}`}
+          >
+            Voir l'offre
+            <span aria-hidden="true">↗</span>
+          </a>
         </div>
       </div>
     </article>

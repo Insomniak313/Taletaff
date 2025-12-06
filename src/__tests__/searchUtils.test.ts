@@ -19,6 +19,7 @@ const sampleJobs: JobRecord[] = [
     salaryMax: 95000,
     tags: ["Product", "Remote"],
     createdAt: "2025-01-20T00:00:00.000Z",
+    externalUrl: "https://jobs.nova.example/product-manager",
   },
   {
     id: "2",
@@ -32,6 +33,7 @@ const sampleJobs: JobRecord[] = [
     salaryMax: 38000,
     tags: ["Hospitalité"],
     createdAt: "2024-08-15T00:00:00.000Z",
+    externalUrl: "https://maison-alba.example/offre-chef-de-salle",
   },
 ];
 
@@ -77,6 +79,7 @@ describe("searchUtils", () => {
       salaryMax: 50000,
       tags: ["Data"],
       createdAt: "2025-01-01T00:00:00.000Z",
+    externalUrl: "https://datacorp.example/jobs/analyste",
     };
     const duplicates: JobRecord[] = [
       baseJob,
