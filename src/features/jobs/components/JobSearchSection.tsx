@@ -134,7 +134,7 @@ export const JobSearchSection = ({ initialCategory }: JobSearchSectionProps = {}
         page={page}
         pageCount={pageCount}
         pageSize={pageSize}
-        pageSizeOptions={JOB_SEARCH_PAGE_SIZE_OPTIONS}
+        pageSizeOptions={[...JOB_SEARCH_PAGE_SIZE_OPTIONS]}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
       />
