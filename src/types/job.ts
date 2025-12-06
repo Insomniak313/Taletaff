@@ -33,12 +33,13 @@ export interface JobFilters {
   category?: string;
   provider?: JobProviderId;
   query?: string;
-  limit?: number;
   location?: string;
   remoteOnly?: boolean;
   minSalary?: number;
   maxSalary?: number;
   tags?: string[];
+  limit?: number;
+  offset?: number;
 }
 
 export interface JobSearchSummary {
@@ -55,9 +56,16 @@ export interface JobSearchSummary {
 export interface JobSearchResult {
   jobs: JobRecord[];
   summary: JobSearchSummary;
+  totalCount: number;
 }
 
 export interface JobSearchResponse {
   jobs: JobRecord[];
   summary: JobSearchSummary;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    pageCount: number;
+  };
 }

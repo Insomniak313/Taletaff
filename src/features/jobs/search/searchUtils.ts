@@ -126,17 +126,22 @@ export const scoreByRelevance = (jobs: JobRecord[], tokens: string[]) => {
     .map((entry) => entry.job);
 };
 
-const emptySummary: JobSearchSummary = {
-  count: 0,
+const buildEmptySummary = (count: number): JobSearchSummary => ({
+  count,
   remoteShare: 0,
   salaryRange: { min: 0, max: 0 },
   topLocations: [],
   topTags: [],
-};
+});
 
-export const buildJobSearchSummary = (jobs: JobRecord[]): JobSearchSummary => {
+export const buildJobSearchSummary = (
+  jobs: JobRecord[],
+  totalCount?: number
+): JobSearchSummary => {
+  const resolvedCount = typeof totalCount === "number" ? totalCount : jobs.length;
+
   if (!jobs.length) {
-    return emptySummary;
+    return buildEmptySummary(resolvedCount);
   }
 
   let minSalary = Number.POSITIVE_INFINITY;
@@ -173,7 +178,7 @@ export const buildJobSearchSummary = (jobs: JobRecord[]): JobSearchSummary => {
   });
 
   return {
-    count: jobs.length,
+    count: resolvedCount,
     remoteShare: remoteCount / jobs.length,
     salaryRange: {
       min: minSalary,

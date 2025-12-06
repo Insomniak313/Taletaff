@@ -67,6 +67,7 @@ describe("UI components", () => {
     const { rerender } = render(<JobCard job={sampleJob} />);
     expect(screen.getByText("Lead Designer")).toBeInTheDocument();
     expect(screen.getByText(/Remote friendly/i)).toBeInTheDocument();
+    expect(screen.getByText(/Verticale product/i)).toBeInTheDocument();
     rerender(<JobCard job={{ ...sampleJob, id: "2", remote: false }} />);
     expect(screen.getAllByText(/Lyon/).length).toBeGreaterThan(0);
     rerender(
@@ -121,6 +122,16 @@ describe("UI components", () => {
       <JobCard
         job={{
           ...sampleJob,
+          id: "7b",
+          category: "",
+        }}
+      />
+    );
+    expect(screen.getByText(/Opportunité multi-catégorie/i)).toBeInTheDocument();
+    rerender(
+      <JobCard
+        job={{
+          ...sampleJob,
           id: "8",
           tags: ["One", "Two", "Three", "Four", "Five"],
         }}
@@ -137,6 +148,16 @@ describe("UI components", () => {
       />
     );
     expect(screen.getByText("+2 tags")).toBeInTheDocument();
+    rerender(
+      <JobCard
+        job={{
+          ...sampleJob,
+          id: "10",
+          source: "apec",
+        }}
+      />
+    );
+    expect(screen.getByText(/Source apec/i)).toBeInTheDocument();
   });
 
   it("affiche la liste des jobs", () => {

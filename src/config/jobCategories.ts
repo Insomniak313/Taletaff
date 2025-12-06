@@ -41,6 +41,19 @@ export const jobCategories: JobCategory[] = [
     }
   },
   {
+    slug: "design",
+    title: "Design & Expérience",
+    description:
+      "UI/UX, brand, motion ou product design : construisez des systèmes cohérents, mesurables et centrés utilisateurs aux côtés de PM exigeants.",
+    hero: "Élevez chaque interface avec intention",
+    seo: {
+      title: "Offres d'emploi Design & Experience · Taletaff",
+      description:
+        "Lead designers, directeurs artistiques et spécialistes UX research trouvent ici des studios qui investissent dans la recherche, la data et l'accessibilité.",
+      keywords: ["product design", "ux research", "brand design", "motion", "design systems"]
+    }
+  },
+  {
     slug: "engineering",
     title: "Ingénierie",
     description:
@@ -77,6 +90,19 @@ export const jobCategories: JobCategory[] = [
       description:
         "Chief of staff, bizops, revenue operations : missions à haute responsabilité avec sponsors exécutifs engagés.",
       keywords: ["ops", "chief of staff", "revenue", "process"]
+    }
+  },
+  {
+    slug: "data",
+    title: "Data & Intelligence",
+    description:
+      "Industrialisez vos pipelines analytics, fiabilisez les dashboards métier et déployez des modèles IA concrets avec les bons garde-fous.",
+    hero: "Des stacks data gouvernées et actionnables",
+    seo: {
+      title: "Offres Data, BI & IA · Taletaff",
+      description:
+        "Data engineers, analytics / BI leads, ML specialists : sélections d'offres avec stack claire (dbt, Snowflake, Python), budgets data et sponsors C-level.",
+      keywords: ["data engineer", "analytics", "machine learning", "bi", "dbt"]
     }
   }
 ];

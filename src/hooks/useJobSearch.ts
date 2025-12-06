@@ -1,8 +1,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JobRecord, JobSearchSummary } from "@/types/job";
 
+export const JOB_SEARCH_PAGE_SIZE_OPTIONS = [10, 20, 40] as const;
+export const JOB_SEARCH_DEFAULT_PAGE_SIZE = JOB_SEARCH_PAGE_SIZE_OPTIONS[0];
+const JOB_SEARCH_MAX_PAGE_SIZE = Math.max(...JOB_SEARCH_PAGE_SIZE_OPTIONS);
+
+const sanitizePage = (value: number) => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 1;
+  }
+  return Math.floor(value);
+};
+
+const sanitizePageSize = (value: number) => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return JOB_SEARCH_DEFAULT_PAGE_SIZE;
+  }
+  return Math.min(Math.floor(value), JOB_SEARCH_MAX_PAGE_SIZE);
+};
+
 interface UseJobSearchOptions {
   initialCategory?: string;
+}
+
+interface JobSearchPagination {
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  totalCount: number;
 }
 
 interface JobSearchState {
@@ -10,6 +35,7 @@ interface JobSearchState {
   summary: JobSearchSummary;
   isLoading: boolean;
   error: string | null;
+  pagination: JobSearchPagination;
 }
 
 interface ClientFilters {
@@ -20,6 +46,8 @@ interface ClientFilters {
   remoteOnly: boolean;
   salaryFloor: number | null;
   selectedTags: string[];
+  page: number;
+  pageSize: number;
 }
 
 const INITIAL_SUMMARY: JobSearchSummary = {
@@ -28,6 +56,19 @@ const INITIAL_SUMMARY: JobSearchSummary = {
   salaryRange: { min: 0, max: 0 },
   topLocations: [],
   topTags: [],
+};
+
+const computePageCount = (total: number, pageSize: number) => {
+  const safeTotal = Math.max(total, 0);
+  const safePageSize = Math.max(pageSize, 1);
+  return Math.max(Math.ceil(safeTotal / safePageSize), 1);
+};
+
+const INITIAL_PAGINATION: JobSearchPagination = {
+  page: 1,
+  pageSize: JOB_SEARCH_DEFAULT_PAGE_SIZE,
+  pageCount: 1,
+  totalCount: 0,
 };
 
 const useDebouncedValue = <T,>(value: T, delay: number) => {
@@ -50,6 +91,8 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
     remoteOnly: false,
     salaryFloor: null,
     selectedTags: [],
+    page: 1,
+    pageSize: JOB_SEARCH_DEFAULT_PAGE_SIZE,
   });
   const debouncedQuery = useDebouncedValue(filters.query, 350);
   const effectiveFilters = useMemo(
@@ -57,11 +100,12 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
     [filters, debouncedQuery]
   );
 
-  const [{ jobs, summary, isLoading, error }, setState] = useState<JobSearchState>({
+  const [{ jobs, summary, isLoading, error, pagination }, setState] = useState<JobSearchState>({
     jobs: [],
     summary: INITIAL_SUMMARY,
     isLoading: false,
     error: null,
+    pagination: INITIAL_PAGINATION,
   });
   const controllerRef = useRef<AbortController>(new AbortController());
 
@@ -73,6 +117,11 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
 
     try {
       const params = new URLSearchParams();
+      const safePage = sanitizePage(nextFilters.page);
+      const safePageSize = sanitizePageSize(nextFilters.pageSize);
+
+      params.set("page", String(safePage));
+      params.set("pageSize", String(safePageSize));
 
       if (nextFilters.category) params.set("category", nextFilters.category);
       if (nextFilters.provider) params.set("provider", nextFilters.provider);
@@ -94,11 +143,34 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
         throw new Error(data.error ?? "Impossible de charger les offres.");
       }
 
+      const jobsPayload = (data.jobs as JobRecord[]) ?? [];
+      const summaryPayload = (data.summary as JobSearchSummary) ?? INITIAL_SUMMARY;
+      const paginationPayload = data.pagination as Partial<JobSearchPagination> | undefined;
+
+      const totalCount =
+        paginationPayload?.totalCount ??
+        summaryPayload.count ??
+        jobsPayload.length;
+      const pageSize = paginationPayload?.pageSize ?? safePageSize;
+      const pageCount = paginationPayload?.pageCount ?? computePageCount(totalCount, pageSize);
+      const page = Math.min(paginationPayload?.page ?? safePage, pageCount);
+
+      const resolvedSummary =
+        summaryPayload.count === totalCount
+          ? summaryPayload
+          : { ...summaryPayload, count: totalCount };
+
       setState({
-        jobs: data.jobs as JobRecord[],
-        summary: (data.summary as JobSearchSummary) ?? INITIAL_SUMMARY,
+        jobs: jobsPayload,
+        summary: resolvedSummary,
         isLoading: false,
         error: null,
+        pagination: {
+          page,
+          pageSize,
+          pageCount,
+          totalCount,
+        },
       });
     } catch (err) {
       if ((err as Error).name === "AbortError") {
@@ -111,6 +183,7 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
         isLoading: false,
         error:
           err instanceof Error ? err.message : "Une erreur inattendue est survenue.",
+        pagination: INITIAL_PAGINATION,
       });
     }
   }, []);
@@ -121,27 +194,27 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
   }, [effectiveFilters, runSearch]);
 
   const setCategory = useCallback((value?: string) => {
-    setFilters((prev) => ({ ...prev, category: value }));
+    setFilters((prev) => ({ ...prev, category: value, page: 1 }));
   }, []);
 
   const setProvider = useCallback((value?: JobRecord["source"]) => {
-    setFilters((prev) => ({ ...prev, provider: value }));
+    setFilters((prev) => ({ ...prev, provider: value, page: 1 }));
   }, []);
 
   const setQuery = useCallback((value: string) => {
-    setFilters((prev) => ({ ...prev, query: value }));
+    setFilters((prev) => ({ ...prev, query: value, page: 1 }));
   }, []);
 
   const setLocation = useCallback((value: string) => {
-    setFilters((prev) => ({ ...prev, location: value }));
+    setFilters((prev) => ({ ...prev, location: value, page: 1 }));
   }, []);
 
   const toggleRemoteOnly = useCallback(() => {
-    setFilters((prev) => ({ ...prev, remoteOnly: !prev.remoteOnly }));
+    setFilters((prev) => ({ ...prev, remoteOnly: !prev.remoteOnly, page: 1 }));
   }, []);
 
   const setSalaryFloor = useCallback((value: number | null) => {
-    setFilters((prev) => ({ ...prev, salaryFloor: value }));
+    setFilters((prev) => ({ ...prev, salaryFloor: value, page: 1 }));
   }, []);
 
   const toggleTag = useCallback((tag: string) => {
@@ -150,7 +223,7 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
       const nextTags = exists
         ? prev.selectedTags.filter((current) => current !== tag)
         : [...prev.selectedTags, tag];
-      return { ...prev, selectedTags: nextTags };
+      return { ...prev, selectedTags: nextTags, page: 1 };
     });
   }, []);
 
@@ -163,7 +236,24 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
       salaryFloor: null,
       selectedTags: [],
       provider: undefined,
+      page: 1,
+      pageSize: JOB_SEARCH_DEFAULT_PAGE_SIZE,
     }));
+  }, []);
+
+  const setPage = useCallback((value: number) => {
+    const nextPage = sanitizePage(value);
+    setFilters((prev) => (prev.page === nextPage ? prev : { ...prev, page: nextPage }));
+  }, []);
+
+  const setPageSize = useCallback((value: number) => {
+    const nextSize = sanitizePageSize(value);
+    setFilters((prev) => {
+      if (prev.pageSize === nextSize && prev.page === 1) {
+        return prev;
+      }
+      return { ...prev, pageSize: nextSize, page: 1 };
+    });
   }, []);
 
   const fetchJobs = useCallback(
@@ -192,6 +282,12 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
     summary,
     isLoading,
     error,
+    page: pagination.page,
+    pageCount: pagination.pageCount,
+    pageSize: pagination.pageSize,
+    totalCount: pagination.totalCount,
+    setPage,
+    setPageSize,
     fetchJobs,
   };
 };

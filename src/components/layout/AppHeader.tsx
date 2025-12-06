@@ -4,6 +4,8 @@ const navItems = [
   { href: "/jobs", label: "Offres" },
   { href: "/jobs/product", label: "Produit" },
   { href: "/jobs/engineering", label: "Tech" },
+  { href: "/jobs/design", label: "Design" },
+  { href: "/jobs/data", label: "Data" },
   { href: "/jobs/marketing", label: "Marketing" },
 ];
 
