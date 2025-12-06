@@ -11,4 +11,4 @@ alter table if exists public.jobs
 alter table if exists public.jobs
   alter column external_url set default 'https://taletaff.com/jobs';
 
-comment on column public.jobs.external_url is 'Lien canonique vers l\'offre source.';
+comment on column public.jobs.external_url is 'Lien canonique vers l''offre source.';
