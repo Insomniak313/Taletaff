@@ -12,6 +12,7 @@ describe("env modules", () => {
   beforeEach(() => {
     vi.resetModules();
     setBaseEnv();
+    delete process.env.VERCEL_URL;
   });
 
   it("expose les variables publiques", async () => {
@@ -30,6 +31,16 @@ describe("env modules", () => {
   it("expose la clé service côté serveur", async () => {
     const { serverEnv } = await import("@/lib/env.server");
     expect(serverEnv.supabaseServiceRoleKey).toBe("service");
+  });
+
+  it("retombe sur Vercel lorsqu'aucune URL publique explicite n'est fournie", async () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.NEXT_PUBLIC_DEFAULT_REDIRECT;
+    process.env.VERCEL_URL = "taletaff.vercel.app";
+
+    const { clientEnv } = await import("@/lib/env.client");
+    expect(clientEnv.siteUrl).toBe("https://taletaff.vercel.app");
+    expect(clientEnv.defaultRedirect).toBe("https://taletaff.vercel.app/auth/callback");
   });
 
   it("signale l'absence de clé service", async () => {

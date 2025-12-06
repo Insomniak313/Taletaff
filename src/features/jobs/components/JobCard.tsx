@@ -76,64 +76,80 @@ export const JobCard = ({ job }: JobCardProps) => {
   );
   const displayedTags = job.tags.slice(0, 4);
   const remainingTagCount = Math.max(0, job.tags.length - displayedTags.length);
+  const metaItems = [
+    {
+      label: "Localisation",
+      value: job.location || "À définir",
+    },
+    {
+      label: "Package annuel",
+      value: formatCurrencyRange(job.salaryMin, job.salaryMax),
+    },
+    {
+      label: "Mise en ligne",
+      value: formatRelativeDate(job.createdAt),
+    },
+  ];
 
   return (
-    <article className="group flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white/95 p-6 shadow-sm ring-1 ring-transparent transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-glow">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+    <article className="group flex flex-col gap-5 rounded-3xl border border-slate-100 bg-white/95 p-6 shadow-sm ring-1 ring-transparent transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-glow">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
           <p className="text-xs uppercase tracking-wide text-slate-400">
             {job.company || "Entreprise confidentielle"}
           </p>
-          <h3 className="text-xl font-semibold text-slate-900">{job.title}</h3>
+          <h3 className="text-2xl font-semibold text-slate-900">{job.title}</h3>
+          <p className="text-sm text-slate-500">
+            {job.category ? `Verticale ${job.category}` : "Opportunité multi-catégorie"}
+          </p>
         </div>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            job.remote
-              ? "bg-brand-50 text-brand-700"
-              : "bg-slate-100 text-slate-600"
-          }`}
-        >
-          {job.remote ? "Remote friendly" : job.location || "Sur site"}
-        </span>
-      </header>
-      <p className="whitespace-pre-line text-sm text-slate-600">
-        {descriptionSummary || "Description en cours de rédaction."}
-      </p>
-      <dl className="grid gap-3 text-xs text-slate-500 sm:grid-cols-3">
-        <div className="rounded-2xl bg-slate-50 px-3 py-2">
-          <dt className="font-semibold uppercase tracking-wide text-slate-400">
-            Localisation
-          </dt>
-          <dd className="mt-1 text-sm text-slate-900">
-            {job.location || "À définir"}
-          </dd>
-        </div>
-        <div className="rounded-2xl bg-slate-50 px-3 py-2">
-          <dt className="font-semibold uppercase tracking-wide text-slate-400">
-            Rémunération
-          </dt>
-          <dd className="mt-1 text-sm text-slate-900">
-            {formatCurrencyRange(job.salaryMin, job.salaryMax)}
-          </dd>
-        </div>
-        <div className="rounded-2xl bg-slate-50 px-3 py-2">
-          <dt className="font-semibold uppercase tracking-wide text-slate-400">
-            Publication
-          </dt>
-          <dd className="mt-1 text-sm text-slate-900">
-            {formatRelativeDate(job.createdAt)}
-          </dd>
-        </div>
-      </dl>
-      <div className="flex flex-wrap gap-2">
-        {displayedTags.map((tag) => (
-          <Tag key={`${job.id}-${tag}`} label={tag} />
-        ))}
-        {remainingTagCount > 0 && (
-          <span className="rounded-full border border-dashed border-slate-200 px-3 py-1 text-xs text-slate-500">
-            +{remainingTagCount} tag{remainingTagCount > 1 ? "s" : ""}
+        <div className="flex flex-col items-end gap-2 text-right">
+          <span
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
+              job.remote
+                ? "bg-brand-50 text-brand-700"
+                : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            {job.remote ? "Remote friendly" : job.location || "Sur site"}
           </span>
-        )}
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            {formatRelativeDate(job.createdAt)}
+          </span>
+        </div>
+      </header>
+
+      <dl className="grid gap-3 text-xs text-slate-500 sm:grid-cols-3">
+        {metaItems.map((item) => (
+          <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3">
+            <dt className="font-semibold uppercase tracking-wide text-slate-400">{item.label}</dt>
+            <dd className="mt-1 text-base text-slate-900">{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 p-4">
+        <p className="whitespace-pre-line text-sm text-slate-600">
+          {descriptionSummary || "Description en cours de rédaction."}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {displayedTags.map((tag) => (
+            <Tag key={`${job.id}-${tag}`} label={tag} />
+          ))}
+          {remainingTagCount > 0 && (
+            <span className="rounded-full border border-dashed border-slate-200 px-3 py-1 text-xs text-slate-500">
+              +{remainingTagCount} tag{remainingTagCount > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <span className="rounded-full border border-slate-200 px-3 py-1 text-slate-600">
+            {job.source ? `Source ${job.source}` : "Source Taletaff"}
+          </span>
+        </div>
       </div>
     </article>
   );

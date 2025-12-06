@@ -14,6 +14,8 @@ const setSalaryFloor = vi.fn();
 const toggleTag = vi.fn();
 const resetFilters = vi.fn();
 const fetchJobs = vi.fn();
+const setPage = vi.fn();
+const setPageSize = vi.fn();
 
 const buildJob = (index: number) => ({
   id: `${index}`,
@@ -49,9 +51,13 @@ const state = {
   remoteOnly: false,
   salaryFloor: null as number | null,
   selectedTags: [] as string[],
+  page: 1,
+  pageCount: 1,
+  pageSize: 10,
 };
 
 vi.mock("@/hooks/useJobSearch", () => ({
+  JOB_SEARCH_PAGE_SIZE_OPTIONS: [10, 20, 40],
   useJobSearch: () => ({
     ...state,
     setCategory,
@@ -63,6 +69,8 @@ vi.mock("@/hooks/useJobSearch", () => ({
     toggleTag,
     resetFilters,
     fetchJobs,
+    setPage,
+    setPageSize,
   }),
 }));
 
@@ -77,6 +85,11 @@ describe("JobSearchSection", () => {
     state.remoteOnly = false;
     state.salaryFloor = null;
     state.selectedTags = [];
+    state.page = 1;
+    state.pageCount = 1;
+    state.pageSize = 10;
+    setPage.mockClear();
+    setPageSize.mockClear();
   });
 
   it("rend les filtres et la liste vide", () => {
@@ -100,15 +113,22 @@ describe("JobSearchSection", () => {
 
   it("gère la pagination sans effets", async () => {
     const user = userEvent.setup();
-    state.jobs = Array.from({ length: 12 }, (_, index) => buildJob(index + 1));
+    state.jobs = Array.from({ length: 4 }, (_, index) => buildJob(index + 1));
+    state.pageCount = 2;
     const { rerender } = render(<JobSearchSection />);
 
     expect(screen.getAllByText(/Page 1 \/ 2/i).length).toBeGreaterThan(0);
     const [, listNextButton] = screen.getAllByRole("button", { name: /Suivant/i });
     await user.click(listNextButton);
+    expect(setPage).toHaveBeenCalledWith(2);
+
+    state.page = 2;
+    rerender(<JobSearchSection />);
     expect(screen.getAllByText(/Page 2 \/ 2/i).length).toBeGreaterThan(0);
 
     state.jobs = Array.from({ length: 3 }, (_, index) => buildJob(index + 1));
+    state.page = 1;
+    state.pageCount = 1;
     rerender(<JobSearchSection />);
     expect(screen.getByText(/Page 1 \/ 1/i)).toBeInTheDocument();
   });
@@ -123,6 +143,8 @@ describe("JobSearchSection", () => {
       topTags: [{ label: "TypeScript", count: 5 }],
     };
     state.jobs = Array.from({ length: 12 }, (_, index) => buildJob(index + 1));
+    state.page = 1;
+    state.pageCount = 2;
     const { rerender } = render(<JobSearchSection />);
 
     await user.click(screen.getByText(jobCategories[1].title));
@@ -149,9 +171,16 @@ describe("JobSearchSection", () => {
 
     const [filtersNextButton] = screen.getAllByRole("button", { name: /Suivant/i });
     await user.click(filtersNextButton);
+    expect(setPage).toHaveBeenCalledWith(2);
+    state.page = 2;
+    state.pageCount = 2;
+    rerender(<JobSearchSection />);
     expect(screen.getAllByText(/Page 2 \/ 2/i).length).toBeGreaterThan(0);
 
     await user.selectOptions(screen.getByLabelText(/Par page/i), "20");
+    expect(setPageSize).toHaveBeenCalledWith(20);
+    state.pageSize = 20;
+    rerender(<JobSearchSection />);
     expect(screen.getByLabelText(/Par page/i)).toHaveValue("20");
 
     state.query = "staff";
@@ -164,6 +193,8 @@ describe("JobSearchSection", () => {
 
     await user.click(screen.getByText(/Réinitialiser/));
     expect(resetFilters).toHaveBeenCalled();
+    state.pageSize = 10;
+    rerender(<JobSearchSection />);
     expect(screen.getByLabelText(/Par page/i)).toHaveValue("10");
   });
 });

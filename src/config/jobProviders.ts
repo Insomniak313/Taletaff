@@ -6,7 +6,16 @@ export interface JobProviderFilterOption {
   label: string;
 }
 
-export const jobProviderFilters: JobProviderFilterOption[] = providerCatalog.map((entry) => ({
+const uniqueProviderEntries = Array.from(
+  providerCatalog.reduce((acc, entry) => {
+    if (!acc.has(entry.id)) {
+      acc.set(entry.id, entry);
+    }
+    return acc;
+  }, new Map<string, (typeof providerCatalog)[number]>()).values()
+);
+
+export const jobProviderFilters: JobProviderFilterOption[] = uniqueProviderEntries.map((entry) => ({
   id: entry.id,
   label: entry.label,
 }));
