@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JobRecord, JobSearchSummary } from "@/types/job";
 
+export const JOB_SEARCH_PAGE_SIZE_OPTIONS = [10, 20, 40] as const;
+export const JOB_SEARCH_DEFAULT_PAGE_SIZE = JOB_SEARCH_PAGE_SIZE_OPTIONS[0];
+
 interface UseJobSearchOptions {
   initialCategory?: string;
 }
@@ -10,6 +13,7 @@ interface JobSearchState {
   summary: JobSearchSummary;
   isLoading: boolean;
   error: string | null;
+  totalCount: number;
 }
 
 interface ClientFilters {
@@ -20,6 +24,8 @@ interface ClientFilters {
   remoteOnly: boolean;
   salaryFloor: number | null;
   selectedTags: string[];
+  page: number;
+  pageSize: number;
 }
 
 const INITIAL_SUMMARY: JobSearchSummary = {
@@ -28,6 +34,12 @@ const INITIAL_SUMMARY: JobSearchSummary = {
   salaryRange: { min: 0, max: 0 },
   topLocations: [],
   topTags: [],
+};
+
+const computePageCount = (total: number, pageSize: number) => {
+  const safeTotal = Math.max(total, 0);
+  const safePageSize = Math.max(pageSize, 1);
+  return Math.max(Math.ceil(safeTotal / safePageSize), 1);
 };
 
 const useDebouncedValue = <T,>(value: T, delay: number) => {
@@ -50,6 +62,8 @@ export const useJobSearch = ({ initialCategory }: UseJobSearchOptions) => {
     remoteOnly: false,
     salaryFloor: null,
     selectedTags: [],
+    page: 1,
+    pageSize: JOB_SEARCH_DEFAULT_PAGE_SIZE,
   });
   const debouncedQuery = useDebouncedValue(filters.query, 350);
   const effectiveFilters = useMemo(
