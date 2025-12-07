@@ -154,9 +154,9 @@ export const JobCard = ({ job }: JobCardProps) => {
             target="_blank"
             rel="noreferrer noopener"
             className="inline-flex items-center gap-2 rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-            aria-label={`Consulter l'offre ${job.title} chez ${job.company}`}
+            aria-label={`Consulter l\u2019offre ${job.title} chez ${job.company}`}
           >
-            Voir l'offre
+            Voir l\u2019offre
             <span aria-hidden="true">↗</span>
           </a>
         </div>

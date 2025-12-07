@@ -93,7 +93,7 @@ describe("JobSearchSection", () => {
   });
 
   it("rend les filtres et la liste vide", () => {
-    const { rerender } = render(<JobSearchSection />);
+    render(<JobSearchSection />);
     expect(screen.getByPlaceholderText(/Poste, stack/i)).toBeInTheDocument();
     expect(
       screen.getByText("Aucune offre ne correspond à vos filtres pour le moment.")

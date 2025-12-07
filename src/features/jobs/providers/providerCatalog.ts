@@ -415,6 +415,14 @@ const webhookProviderCatalog = [
 
 export const providerCatalog = [...jsonProviderCatalog, ...webhookProviderCatalog] as const;
 
+if (process.env.NODE_ENV !== "production") {
+  providerCatalog.forEach((entry) => {
+    if (!providerLanguages.includes(entry.language)) {
+      throw new Error(`Langue inconnue "${entry.language}" pour le provider ${entry.id}`);
+    }
+  });
+}
+
 export type ProviderCatalogEntry = (typeof providerCatalog)[number];
 
 export const providerCatalogMap = providerCatalog.reduce<Record<string, ProviderCatalogEntry>>((acc, entry) => {
