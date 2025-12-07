@@ -10,9 +10,56 @@ import { isJobProviderId } from "@/config/jobProviders";
 const TABLE_NAME = "jobs";
 const DEFAULT_FETCH_LIMIT = 400;
 
+const resolveSiteUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL;
+  if (envUrl?.trim()) {
+    const prefixed = envUrl.startsWith("http") ? envUrl : `https://${envUrl}`;
+    return prefixed.replace(/\/$/, "");
+  }
+  return "https://taletaff.com";
+};
+
+const sanitizeExternalUrl = (value: unknown): string | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.toString();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const buildFallbackExternalUrl = (record: Record<string, unknown>): string => {
+  const identifierParts = [record.source, record.external_id ?? record.externalId, record.id]
+    .map((value) => {
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+      if (typeof value === "number" && Number.isFinite(value)) {
+        return String(value);
+      }
+      return null;
+    })
+    .filter((value): value is string => Boolean(value));
+  const ref = identifierParts.length ? identifierParts.join("-") : "taletaff";
+  const baseUrl = `${resolveSiteUrl()}/jobs`;
+  return `${baseUrl}?ref=${encodeURIComponent(ref)}`;
+};
+
 const mapRecord = (record: Record<string, unknown>): JobRecord => {
   const sourceValue = typeof record.source === "string" ? record.source : undefined;
   const source = sourceValue && isJobProviderId(sourceValue) ? sourceValue : undefined;
+  const externalUrl =
+    sanitizeExternalUrl(record.external_url ?? record.externalUrl) ?? buildFallbackExternalUrl(record);
 
   return {
     id: String(record.id),
@@ -27,6 +74,7 @@ const mapRecord = (record: Record<string, unknown>): JobRecord => {
     tags: (record.tags as string[]) ?? [],
     createdAt: String(record.created_at ?? record.createdAt ?? new Date().toISOString()),
     source,
+    externalUrl,
     externalId: record.external_id ? String(record.external_id) : undefined,
     fetchedAt: record.fetched_at ? String(record.fetched_at) : undefined,
   };

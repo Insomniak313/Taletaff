@@ -161,6 +161,28 @@ const sanitizeWebhookJob = (
     return null;
   }
 
+  const links =
+    (record.links as Record<string, unknown> | undefined) ??
+    (Array.isArray(record.links) ? (record.links[0] as Record<string, unknown>) : undefined);
+  const urlsRecord = record.urls as Record<string, unknown> | undefined;
+  const candidateUrls: unknown[] = [
+    record.externalUrl,
+    record.url,
+    record.jobUrl,
+    record.job_url,
+    record.applyUrl,
+    record.apply_url,
+    links?.apply,
+    links?.offer,
+    links?.detail,
+    urlsRecord?.apply,
+    urlsRecord?.offer,
+    urlsRecord?.detail,
+  ];
+  const externalUrl = candidateUrls
+    .map((candidate) => urlFrom(candidate))
+    .find((value): value is string => Boolean(value));
+
   return {
     externalId,
     title,
@@ -174,6 +196,7 @@ const sanitizeWebhookJob = (
     salaryMax: numberFrom(record.salaryMax ?? record.salary_max) ?? null,
     publishedAt: publishedAtFrom(record.publishedAt ?? record.published_at),
     language: fallback.language,
+    externalUrl,
   };
 };
 
@@ -246,6 +269,27 @@ export const stringFrom = (value: unknown): string | undefined => {
   }
   if (typeof value === "number" && Number.isFinite(value)) {
     return String(value);
+  }
+  return undefined;
+};
+
+export const urlFrom = (value: unknown): string | undefined => {
+  const direct = typeof value === "string" ? value : stringFrom(value);
+  const normalized = direct?.trim();
+  if (normalized && /^https?:\/\//i.test(normalized)) {
+    try {
+      const url = new URL(normalized);
+      return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  if (value && typeof value === "object") {
+    const nested =
+      (value as Record<string, unknown>).url ??
+      (value as Record<string, unknown>).href ??
+      (value as Record<string, unknown>).link;
+    return nested ? urlFrom(nested) : undefined;
   }
   return undefined;
 };

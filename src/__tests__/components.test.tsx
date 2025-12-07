@@ -28,6 +28,7 @@ const sampleJob = {
   salaryMax: 85000,
   tags: ["Figma"],
   createdAt: new Date().toISOString(),
+  externalUrl: "https://atlas.example/offre",
 };
 
 const providerOptions: JobProviderFilterOption[] = [
