@@ -188,4 +188,123 @@ describe("jobService", () => {
     expect(result.totalCount).toBe(1);
     expect(result.summary.count).toBe(1);
   });
+
+  it("préserve l'URL externe valide renvoyée par la base", async () => {
+    mockData = {
+      data: [
+        {
+          id: "41",
+          external_url: " https://jobs.example.com/offre ",
+        },
+      ],
+      error: null,
+      count: null,
+    };
+    const result = await jobService.searchJobs();
+    expect(result.jobs[0].externalUrl).toBe("https://jobs.example.com/offre");
+  });
+
+  it("ignore les URLs externes avec un schéma non sécurisé", async () => {
+    mockData = {
+      data: [
+        {
+          id: 55,
+          source: "apec",
+          external_id: "abc",
+          external_url: "ftp://example.com/offre",
+        },
+      ],
+      error: null,
+      count: null,
+    };
+    const result = await jobService.searchJobs();
+    expect(result.jobs[0].externalUrl).toMatch(/\/jobs\?ref=apec-abc-55$/);
+  });
+
+  it("génère un lien de secours quand aucune URL n'est exploitable", async () => {
+    mockData = {
+      data: [
+        {
+          id: 77,
+          source: "apec",
+          external_id: 1234,
+          external_url: "notaurl",
+        },
+      ],
+      error: null,
+      count: null,
+    };
+    const result = await jobService.searchJobs();
+    expect(result.jobs[0].externalUrl).toMatch(/\/jobs\?ref=apec-1234-77$/);
+  });
+
+  it("retombe sur la base Taletaff quand aucune URL site n'est configurée", async () => {
+    const previousSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const previousVercelUrl = process.env.VERCEL_URL;
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.VERCEL_URL;
+
+    try {
+      mockData = {
+        data: [
+          {
+            id: 88,
+            source: "apec",
+            external_id: "9999",
+            external_url: "",
+          },
+        ],
+        error: null,
+        count: null,
+      };
+      const result = await jobService.searchJobs();
+      expect(result.jobs[0].externalUrl).toBe("https://taletaff.com/jobs?ref=apec-9999-88");
+    } finally {
+      if (previousSiteUrl === undefined) {
+        delete process.env.NEXT_PUBLIC_SITE_URL;
+      } else {
+        process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
+      }
+
+      if (previousVercelUrl === undefined) {
+        delete process.env.VERCEL_URL;
+      } else {
+        process.env.VERCEL_URL = previousVercelUrl;
+      }
+    }
+  });
+
+  it("normalise la base site sans protocole et applique un ref par défaut", async () => {
+    const previousSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const previousVercelUrl = process.env.VERCEL_URL;
+    process.env.NEXT_PUBLIC_SITE_URL = "jobs.taletaff.test";
+    delete process.env.VERCEL_URL;
+
+    try {
+      mockData = {
+        data: [
+          {
+            id: "",
+            external_url: "",
+          },
+        ],
+        error: null,
+        count: null,
+      };
+      const result = await jobService.searchJobs();
+      expect(result.jobs[0].externalUrl).toBe("https://jobs.taletaff.test/jobs?ref=taletaff");
+    } finally {
+      if (previousSiteUrl === undefined) {
+        delete process.env.NEXT_PUBLIC_SITE_URL;
+      } else {
+        process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
+      }
+
+      if (previousVercelUrl === undefined) {
+        delete process.env.VERCEL_URL;
+      } else {
+        process.env.VERCEL_URL = previousVercelUrl;
+      }
+    }
+  });
 });

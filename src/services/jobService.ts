@@ -19,8 +19,6 @@ const resolveSiteUrl = () => {
   return "https://taletaff.com";
 };
 
-const JOB_FALLBACK_BASE_URL = `${resolveSiteUrl()}/jobs`;
-
 const sanitizeExternalUrl = (value: unknown): string | null => {
   if (typeof value !== "string") {
     return null;
@@ -53,7 +51,8 @@ const buildFallbackExternalUrl = (record: Record<string, unknown>): string => {
     })
     .filter((value): value is string => Boolean(value));
   const ref = identifierParts.length ? identifierParts.join("-") : "taletaff";
-  return `${JOB_FALLBACK_BASE_URL}?ref=${encodeURIComponent(ref)}`;
+  const baseUrl = `${resolveSiteUrl()}/jobs`;
+  return `${baseUrl}?ref=${encodeURIComponent(ref)}`;
 };
 
 const mapRecord = (record: Record<string, unknown>): JobRecord => {
