@@ -14,23 +14,33 @@ jobs:
       contents: read
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - name: Guard required secrets
+        run: npm install -g supabase
+      - name: Configure Supabase
         env:
           SUPABASE_DB_URL: ${{ env.SUPABASE_DB_URL }}
+          SUPABASE_PROJECT_ID: ${{ env.SUPABASE_PROJECT_ID }}
+          SUPABASE_SERVICE_ROLE: ${{ env.SUPABASE_SERVICE_ROLE }}
         run: |
-          if [ -z "$SUPABASE_DB_URL" ]; then
-            echo "SUPABASE_DB_URL est manquant. Configurez-le dans les secrets du dépôt."
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$SUPABASE_PROJECT_ID" ] || [ -z "$SUPABASE_SERVICE_ROLE" ]; then
+            echo "Secrets SUPABASE_DB_URL, SUPABASE_PROJECT_ID et SUPABASE_SERVICE_ROLE requis."
             exit 1
           fi
+
+          mkdir -p supabase
+          cat <<EOF > ./supabase/.env
+SUPABASE_DB_URL=$SUPABASE_DB_URL
+EOF
+
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" \
+            --password "$SUPABASE_SERVICE_ROLE"
       - name: Apply migrations
         env:
           SUPABASE_DB_URL: ${{ env.SUPABASE_DB_URL }}
         run: |
-          supabase db push --db-url "$SUPABASE_DB_URL"
+          supabase db push
